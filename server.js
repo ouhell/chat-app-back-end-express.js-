@@ -11,10 +11,23 @@ const {
   allowPath,
   bindRole,
 } = require("./auth/AuthetificationHandler");
-
-allowPath("/api/auth/*");
-bindRole("/api/*", "DOCTOR");
+/*
+  URL CORRECTOR  "remove last /"
+ const UrlHandler = require("./handlers/UrlHandler");
+app.use(UrlHandler);
+ */
 app.use(AuthentificationHandler);
+//
+
+// SETUP ALLOWED PATHS (order is important)
+allowPath("/api/userapi/users", "post");
+allowPath("/api/auth/*");
+allowPath("/api/userapi/");
+//
+
+// SETUP REQUIRED ROLES (order is important)
+
+//
 
 // SETUP ROUTERS
 const AuthentificationController = require("./auth/AuthentficationController");
@@ -28,7 +41,7 @@ const ApiErrorHandler = require("./error/ApiErrorHandler");
 app.use(ApiErrorHandler);
 
 app.all("*", (req, res) => {
-  res.status(404).send("api endpoint not found");
+  res.status(404).send("CANNOT FIND END POINT : " + req.url);
 });
 
 // set up database connection

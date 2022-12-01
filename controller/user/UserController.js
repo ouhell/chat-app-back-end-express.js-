@@ -17,4 +17,10 @@ UserController.post(
   })
 );
 
+UserController.delete("/users/:id", async (req, res) => {
+  const userId = req.params.id;
+  const deletedUser = await UserModel.deleteOne({ id: userId });
+  res.status(200).json(deletedUser);
+});
+
 module.exports = UserController;

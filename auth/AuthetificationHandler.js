@@ -1,11 +1,17 @@
 const jwt = require("jsonwebtoken");
 const ApiError = require("../error/ApiError");
-
+const METHOD_SIGNATURES = ["GET", "POST", "PUT", "DELETE"];
 const allowed_paths = []; //hold paths allowed without authentification
 const role_dependant_paths = []; // hold paths that need certain roles to proceed
-function allowPath(path) {
+function allowPath(path, ...methods) {
   if (!path.trim()) return;
-  allowed_paths.push(path);
+  if (allowed_paths.includes(path)) return;
+  let isCorrespondinglist = true;
+  methods = methods
+    .map((method) => method.toUpperCase())
+    .filter((method) => METHOD_SIGNATURES.includes(method));
+
+  allowed_paths.push({ path, methods });
 }
 
 function bindRole(path, ...roles) {
@@ -17,24 +23,29 @@ function bindRole(path, ...roles) {
   });
 }
 
-function checkAllowed(path) {
+function checkAllowed(path, method) {
   let isAllowed = false;
-  allowed_paths.forEach((allowedPath) => {
-    if (comparePaths(path, allowedPath)) {
+  for (allowedPath of allowed_paths) {
+    if (comparePaths(path, allowedPath.path)) {
+      if (allowedPath.methods.length !== 0) {
+        if (!allowedPath.methods.includes(method)) continue;
+      }
       isAllowed = true;
-      return;
+      break;
     }
-  });
+  }
+
   return isAllowed;
 }
 function isRoleAllowed(path, role) {
   let isAllowed = true;
-  role_dependant_paths.forEach((dependance) => {
+  for (dependance of role_dependant_paths) {
     if (comparePaths(path, dependance.path)) {
       isAllowed = dependance.roles.includes(role);
-      return;
+      break;
     }
-  });
+  }
+  return isAllowed;
 }
 
 function comparePaths(excatPath, pathModel) {
@@ -51,7 +62,7 @@ function comparePaths(excatPath, pathModel) {
 }
 
 function AuthentificationHandler(req, res, next) {
-  if (checkAllowed(req.url)) return next(); // if path is allowed without authentification
+  if (checkAllowed(req.url, req.method)) return next(); // if path is allowed without authentification
   const authorization = req.headers.authorization;
 
   const authToken = authorization && authorization.split(" ")[1];

@@ -22,7 +22,14 @@ const UserSchema = mongoose.Schema({
   groups: [mongoose.Types.ObjectId],
   isEnabled: { type: String, default: true },
   profile_picture: mongoose.Types.ObjectId,
-  role: { type: String, default: "USER" },
+  role: {
+    type: String,
+    default: "USER",
+    enum: {
+      values: ["USER", "ADMIN"],
+      message: "role {VALUE} is not supported",
+    },
+  },
 });
 
 module.exports = mongoose.model("users", UserSchema);
