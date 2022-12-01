@@ -1,8 +1,35 @@
+require("dotenv").config();
 const express = require("express");
 
 const app = express();
 
 app.use(express.json()); // for parsing request body json files
+
+// SETUP PRE HANDLERS
+const {
+  AuthentificationHandler,
+  allowPath,
+  bindRole,
+} = require("./auth/AuthetificationHandler");
+
+allowPath("/api/auth/*");
+bindRole("/api/*", "DOCTOR");
+app.use(AuthentificationHandler);
+
+// SETUP ROUTERS
+const AuthentificationController = require("./auth/AuthentficationController");
+const UserController = require("./controller/user/UserController");
+app.use("/api/auth", AuthentificationController);
+app.use("/api/userapi", UserController);
+//
+
+// SETUP ERROR HANDLERS
+const ApiErrorHandler = require("./error/ApiErrorHandler");
+app.use(ApiErrorHandler);
+
+app.all("*", (req, res) => {
+  res.status(404).send("api endpoint not found");
+});
 
 // set up database connection
 
@@ -26,7 +53,7 @@ function connectToDatabase(app) {
         "\n RETRYING IN 5 SECONDS"
       );
       setTimeout(() => {
-        connectToDatabase(app), 6000;
+        connectToDatabase(app), 5000;
       });
     });
 }
