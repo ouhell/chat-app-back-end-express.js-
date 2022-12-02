@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const MessageSchema = mongoose.Schema({
   sender: { type: mongoose.Types.ObjectId, required: true, immutable: true },
   conversation: {
-    type: mongoose.Types.ObjectId,
+    type: String,
     required: true,
     immutable: true,
   },
   sent_date: { type: Date, default: () => Date.now(), immutable: true },
-  idited_date: Date,
+  edited_date: Date,
   content: { type: Object, required: true },
   content_type: { type: String, required: true },
   file_name: String,

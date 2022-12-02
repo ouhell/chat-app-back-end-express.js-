@@ -71,7 +71,7 @@ function AuthentificationHandler(req, res, next) {
     if (err) return next(ApiError.forbidden("faulty access token"));
     if (!isRoleAllowed(req.url, userinfo.role))
       return next(ApiError.forbidden("role permission denied"));
-    req.userinfo = userinfo;
+    req.userInfo = userinfo;
     next();
   });
 }

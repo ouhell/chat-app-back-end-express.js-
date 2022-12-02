@@ -22,7 +22,8 @@ AuthentificationController.post("/login", async (req, res, next) => {
     return;
   }
 
-  access_token = jwt.sign({ userid: user.id }, process.env.ACCESS_TOKEN_SECRET);
+  access_token = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET);
+
   res.status(200).json({ access_token });
 });
 

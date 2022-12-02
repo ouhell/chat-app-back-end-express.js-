@@ -7,8 +7,8 @@ const UserSchema = mongoose.Schema({
   password: { type: String, required: true },
   contacts: [
     {
-      id: mongoose.Types.ObjectId,
-      conversation: mongoose.Types.ObjectId,
+      contact_id: { type: mongoose.Types.ObjectId, required: true },
+      conversation: { type: String, required: true },
       blocked: { type: Boolean, default: false },
     },
   ],

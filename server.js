@@ -1,9 +1,13 @@
 require("dotenv").config();
 const express = require("express");
-
+const cors = require("cors");
 const app = express();
 
 app.use(express.json()); // for parsing request body json files
+
+//SETUP CORS ALLOWS
+app.use(cors("*"));
+//
 
 // SETUP PRE HANDLERS
 const {
@@ -51,8 +55,7 @@ const mongoose = require("mongoose");
 connectToDatabase(app); // it all start
 
 function connectToDatabase(app) {
-  const URI =
-    "mongodb+srv://ouhell:konoDIOda@main.dmseklc.mongodb.net/main?retryWrites=true&w=majority";
+  const URI = process.env.DATABASE_CONNECTION_URI;
   mongoose
     .connect(URI)
     .then(() => {
@@ -72,7 +75,7 @@ function connectToDatabase(app) {
 }
 
 function startServer(app) {
-  const PORT = 5000;
+  const PORT = process.env.PORT;
   app.listen(PORT, () => {
     console.log(`SERVER STARTED AT PORT ${PORT} ::`);
   });
