@@ -21,10 +21,12 @@ UserController.get(
 
 UserController.get(
   "/user-contact",
-  ErrorCatcher(async (req, res) => {
+  ErrorCatcher(async (req, res, next) => {
     console.log("user info", req.userInfo);
     const id = req.userInfo.id;
     const user = await UserModel.findById(req.userInfo.id);
+    if (!user)
+      return next(ApiError.forbidden("requesting user does not exist"));
     console.log("user : ", user);
     res.status(200).json(await UserModel.find({ _id: { $in: user.contacts } }));
   })
