@@ -12,6 +12,7 @@
     "mongoose": "^6.7.5"
   },
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon  server.js",
+    "dev": "nodemon --inspect-brk server.js"
   }
 }

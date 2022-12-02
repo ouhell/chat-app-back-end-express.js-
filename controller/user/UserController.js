@@ -4,6 +4,7 @@ const UserModel = require("../../schema/user/UserModel");
 const UserController = express.Router();
 const ErrorCatcher = require("../../error/ErrorCatcher");
 const ApiError = require("../../error/ApiError");
+const EncryptionHandler = require("../../security/EncryptionHandler");
 
 UserController.get(
   "/users/:id",
@@ -58,8 +59,14 @@ UserController.post(
 // does not need authentication
 UserController.post(
   "/users",
-  ErrorCatcher(async (req, res) => {
+  ErrorCatcher(async (req, res, next) => {
     const sentUserData = req.body;
+    if (!sentUserData) return next(ApiError.badRequest("no data"));
+    if (!validatePassword(sentUserData.password))
+      return next(
+        ApiError.badRequest("password must be longer than 8 characters")
+      );
+    sentUserData.password = EncryptionHandler.encrypt(sentUserData.password);
 
     const newUser = await UserModel.create(sentUserData);
     res.status(200).json(newUser);
@@ -86,6 +93,13 @@ function createConversationId(id1, id2) {
     return id1 + id2;
   }
   return id2 + id1;
+}
+
+function validatePassword(password) {
+  "".length;
+  if (!password || !password instanceof String || !password.length > 8)
+    return false;
+  return true;
 }
 
 module.exports = UserController;
