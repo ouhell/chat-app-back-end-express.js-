@@ -24,6 +24,7 @@ app.use(AuthentificationHandler);
 //
 
 // SETUP ALLOWED PATHS (order is important)
+
 allowPath("/api/userapi/users", "post");
 allowPath("/api/auth/*");
 allowPath("/api/userapi/");

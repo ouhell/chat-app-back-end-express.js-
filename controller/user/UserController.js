@@ -9,6 +9,8 @@ const EncryptionHandler = require("../../security/EncryptionHandler");
 UserController.get(
   "/users/:id",
   ErrorCatcher(async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return next(ApiError.forbidden("invalid id"));
     res.status(200).json(await UserModel.findById(req.params.id));
   })
 );
@@ -22,13 +24,14 @@ UserController.get(
 UserController.get(
   "/user-contact",
   ErrorCatcher(async (req, res, next) => {
-    console.log("user info", req.userInfo);
-    const id = req.userInfo.id;
-    const user = await UserModel.findById(req.userInfo.id);
+    const user = await UserModel.findById(req.userInfo._id);
     if (!user)
       return next(ApiError.forbidden("requesting user does not exist"));
-    console.log("user : ", user);
-    res.status(200).json(await UserModel.find({ _id: { $in: user.contacts } }));
+    res.status(200).json(
+      await UserModel.find({
+        _id: { $in: user.contacts.map((contact) => contact.contact_id) },
+      })
+    );
   })
 );
 UserController.post(
@@ -39,10 +42,12 @@ UserController.post(
     if (!mongoose.Types.ObjectId.isValid(postedId)) {
       return next(ApiError.badRequest("invalid id"));
     }
-
-    const user = new UserModel(await UserModel.findById(req.userInfo.id));
-
-    if (!user) {
+    console.log("jwt stored info : ", req.userInfo);
+    console.log("filtering id : ", req.userInfo._id);
+    const user = new UserModel(await UserModel.findById(req.userInfo._id));
+    console.log("fetched user : ", user);
+    return next("lmao");
+    /* if (!user) {
       return next(ApiError.forbidden("USER DOES NOT EXIST"));
     }
     //check if contact already exists
@@ -51,10 +56,9 @@ UserController.post(
     }
     user.contacts.push({
       contact_id: postedId,
-      conversation: createConversationId(postedId, user.id),
     });
     const newUser = await user.save();
-    res.status(200).json(newUser);
+    res.status(200).json(newUser); */
   })
 );
 
@@ -98,8 +102,8 @@ function createConversationId(id1, id2) {
 }
 
 function validatePassword(password) {
-  "".length;
-  if (!password || !password instanceof String || !password.length > 8)
+  console.log(password, password.length);
+  if (!password || !password instanceof String || password.length < 8)
     return false;
   return true;
 }

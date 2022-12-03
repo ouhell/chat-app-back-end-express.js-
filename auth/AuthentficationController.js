@@ -26,9 +26,14 @@ AuthentificationController.post(
       return;
     }
 
-    access_token = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET);
+    access_token = jwt.sign(
+      { _id: user._id, role: user.role },
+      process.env.ACCESS_TOKEN_SECRET
+    );
 
-    res.status(200).json({ access_token });
+    res
+      .status(200)
+      .json({ access_token, userId: user._id, userRole: user.role });
   })
 );
 

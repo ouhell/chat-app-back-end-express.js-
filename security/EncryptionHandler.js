@@ -19,8 +19,6 @@ class EncryptionHandler {
   }
 
   static decrypt(text) {
-    console.log("KEY", this.#SecuritykeyString);
-    console.log("VICTOR", this.#initVectorString);
     const decipher = crypto.createDecipheriv(
       this.#algorithm,
       this.#Securitykey,
