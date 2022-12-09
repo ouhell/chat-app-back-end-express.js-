@@ -27,7 +27,7 @@ app.use(AuthentificationHandler);
 
 allowPath("/api/userapi/users", "post");
 allowPath("/api/auth/*");
-allowPath("/api/userapi/");
+
 //
 
 // SETUP REQUIRED ROLES (order is important)
@@ -37,8 +37,10 @@ allowPath("/api/userapi/");
 // SETUP ROUTERS
 const AuthentificationController = require("./auth/AuthentficationController");
 const UserController = require("./controller/user/UserController");
+const MessageController = require("./controller/user/MessageController");
 app.use("/api/auth", AuthentificationController);
 app.use("/api/userapi", UserController);
+app.use("/api/messagerie", MessageController);
 //
 
 // SETUP ERROR HANDLERS
@@ -70,8 +72,8 @@ function connectToDatabase(app) {
         "\n RETRYING IN 5 SECONDS"
       );
       setTimeout(() => {
-        connectToDatabase(app), 5000;
-      });
+        connectToDatabase(app);
+      }, 5000);
     });
 }
 

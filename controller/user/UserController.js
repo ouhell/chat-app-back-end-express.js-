@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const UserModel = require("../../schema/user/UserModel");
+const ConversationModel = require("../../schema/message/ConversationModel");
 const UserController = express.Router();
 const ErrorCatcher = require("../../error/ErrorCatcher");
 const ApiError = require("../../error/ApiError");
@@ -24,14 +25,26 @@ UserController.get(
 UserController.get(
   "/user-contact",
   ErrorCatcher(async (req, res, next) => {
-    const user = await UserModel.findById(req.userInfo._id);
-    if (!user)
-      return next(ApiError.forbidden("requesting user does not exist"));
-    res.status(200).json(
-      await UserModel.find({
-        _id: { $in: user.contacts.map((contact) => contact.contact_id) },
-      })
-    );
+    console.log(req.userInfo._id);
+    const conversations = await ConversationModel.find({
+      identifier: { $regex: new RegExp(req.userInfo._id) },
+    });
+    console.log("conversations : ", conversations);
+    const filteredList = conversations.reduce((reduced, convo, i) => {
+      console.log("reduced : ", i, " : ", reduced);
+      let { _id, username, personal_name } = convo.users.find(
+        (user) => user._id.toString() !== req.userInfo._id
+      );
+
+      reduced.push({
+        _id,
+        username,
+        personal_name,
+        conversation_id: convo._id,
+      });
+      return reduced;
+    }, []);
+    res.status(200).json(filteredList);
   })
 );
 UserController.post(
@@ -40,59 +53,51 @@ UserController.post(
     const postedId = req.params.id;
     // check if id is valid mongo ObjectId
     if (!mongoose.Types.ObjectId.isValid(postedId)) {
-      return next(ApiError.badRequest("invalid id"));
+      return next(ApiError.badRequest("invalid contact id"));
     }
-    console.log("jwt stored info : ", req.userInfo);
-    console.log("filtering id : ", req.userInfo._id);
-    const user = new UserModel(await UserModel.findById(req.userInfo._id));
-    console.log("fetched user : ", user);
-    return next("lmao");
-    /* if (!user) {
+
+    const user = await UserModel.findById(req.userInfo._id);
+    const contact = await UserModel.findById(postedId);
+
+    if (!user) {
       return next(ApiError.forbidden("USER DOES NOT EXIST"));
     }
-    //check if contact already exists
-    if (checkIfContactExists(user.contacts, postedId)) {
-      return next(ApiError.badRequest("contact already exists"));
+    if (!contact) {
+      return next(
+        ApiError.forbidden(`Contact with id ${postedId} does not exists`)
+      );
     }
-    user.contacts.push({
-      contact_id: postedId,
+    //check if convo already exists
+    const convo_indentifier = createConversationId(user._id, contact._id);
+    const conversation = await ConversationModel.findOne({
+      identifier: convo_indentifier,
     });
-    const newUser = await user.save();
-    res.status(200).json(newUser); */
+    if (conversation) {
+      return next(ApiError.badRequest("contact already in contact list"));
+    }
+
+    const newConvo = await ConversationModel.create({
+      identifier: convo_indentifier,
+      users: [
+        {
+          _id: user._id,
+          username: user.username,
+          personal_name: user.personal_name,
+        },
+        {
+          _id: contact._id,
+          username: contact.username,
+          personal_name: contact.personal_name,
+        },
+      ],
+    });
+    res.status(200).json(newConvo);
   })
 );
 
 // does not need authentication
-UserController.post(
-  "/users",
-  ErrorCatcher(async (req, res, next) => {
-    const sentUserData = req.body;
-    if (!sentUserData) return next(ApiError.badRequest("no data"));
-    if (!validatePassword(sentUserData.password))
-      return next(
-        ApiError.badRequest("password must be longer than 8 characters")
-      );
-    sentUserData.password = EncryptionHandler.encrypt(sentUserData.password);
-
-    const newUser = await UserModel.create(sentUserData);
-    res.status(200).json(newUser);
-  })
-);
-
-UserController.delete("/users/:id", async (req, res) => {
-  const userId = req.params.id;
-  const deletedUser = await UserModel.deleteOne({ _id: userId });
-  res.status(200).json(deletedUser);
-});
 
 // utility functions
-
-function checkIfContactExists(contacts, id) {
-  for (let contact of contacts) {
-    if (contact.contact_id === id) return true;
-  }
-  return false;
-}
 
 function createConversationId(id1, id2) {
   if (id1 > id2) {
