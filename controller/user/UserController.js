@@ -25,13 +25,10 @@ UserController.get(
 UserController.get(
   "/user-contact",
   ErrorCatcher(async (req, res, next) => {
-    console.log(req.userInfo._id);
     const conversations = await ConversationModel.find({
       identifier: { $regex: new RegExp(req.userInfo._id) },
     });
-    console.log("conversations : ", conversations);
     const filteredList = conversations.reduce((reduced, convo, i) => {
-      console.log("reduced : ", i, " : ", reduced);
       let { _id, username, personal_name } = convo.users.find(
         (user) => user._id.toString() !== req.userInfo._id
       );
@@ -107,7 +104,6 @@ function createConversationId(id1, id2) {
 }
 
 function validatePassword(password) {
-  console.log(password, password.length);
   if (!password || !password instanceof String || password.length < 8)
     return false;
   return true;

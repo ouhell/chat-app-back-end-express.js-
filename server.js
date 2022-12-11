@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
+const server = require("http").createServer(app);
 
 app.use(express.json()); // for parsing request body json files
 
@@ -51,6 +52,18 @@ app.all("*", (req, res) => {
   res.status(404).send("CANNOT FIND END POINT : " + req.url);
 });
 
+//setupt socket
+const { Server } = require("socket.io");
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("user connected : ", socket.id);
+});
+
 // set up database connection
 
 const mongoose = require("mongoose");
@@ -79,7 +92,7 @@ function connectToDatabase(app) {
 
 function startServer(app) {
   const PORT = process.env.PORT;
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`SERVER STARTED AT PORT ${PORT} ::`);
   });
 }

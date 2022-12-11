@@ -28,8 +28,6 @@ MessageController.post(
 
     if (!conversation) return next(ApiError.notFound("can't find coversation"));
 
-    console.log(conversation);
-
     if (!conversation.users.find((user) => user._id.toString() === user_id))
       return next(ApiError.forbidden("invalid contact"));
 
@@ -62,7 +60,6 @@ MessageController.get(
     const messages = await MessageModel.where("conversation").equals(
       conversation._id.toString()
     );
-    console.log("messages", messages);
     res.status(200).json(messages);
   })
 );
