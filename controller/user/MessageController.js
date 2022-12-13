@@ -5,6 +5,7 @@ const CoversationModel = require("../../schema/message/ConversationModel");
 const UserModel = require("../../schema/user/UserModel");
 const ApiError = require("../../error/ApiError");
 const ErrorCatcher = require("../../error/ErrorCatcher");
+const fileupload = require("express-fileupload");
 
 const MessageController = express.Router();
 
@@ -62,6 +63,17 @@ MessageController.get(
     );
     res.status(200).json(messages);
   })
+);
+
+MessageController.post(
+  "/file",
+  fileupload({
+    createParentPath: true,
+  }),
+  async (req, res, next) => {
+    console.log("request files : ", req.files);
+    return res.sendStatus(200);
+  }
 );
 
 module.exports = MessageController;

@@ -1,14 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const app = express();
-const server = require("http").createServer(app);
-
-app.use(express.json()); // for parsing request body json files
-
-//SETUP CORS ALLOWS
-app.use(cors("*"));
-//
+const app = require("./connection/app/app");
+const server = require("./connection/server/server");
 
 // SETUP PRE HANDLERS
 const {
@@ -53,16 +47,8 @@ app.all("*", (req, res) => {
 });
 
 //setupt socket
-const { Server } = require("socket.io");
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
 
-io.on("connection", (socket) => {
-  console.log("user connected : ", socket.id);
-});
+const socketio = require("./connection/sockets/socket");
 
 // set up database connection
 
