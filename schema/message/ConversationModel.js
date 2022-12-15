@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const ConverstionSchema = mongoose.Schema({
-  identifier: { type: String, required: true, indexed: true },
+  identifier: { type: String, required: true },
   users: [
     {
       _id: { type: mongoose.Types.ObjectId, required: true },
