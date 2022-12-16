@@ -259,25 +259,55 @@ UserController.get("/request/candidates", async (req, res, next) => {
   });
 
   filterList = contacts.concat(requested);
-  filterList.push(req.userInfo._id);
+  filterList.push(mongoose.Types.ObjectId(req.userInfo._id));
+  console.log("filter list", filterList);
 
-  const searchQuery = {
+  const matchQuery = {
     _id: { $not: { $in: filterList } },
   };
   if (searchtext) {
-    searchQuery["$or"] = [
+    matchQuery["$or"] = [
       { username: { $regex: new RegExp(searchtext) } },
       { personal_name: { $regex: new RegExp(searchtext) } },
     ];
   }
 
-  let candidates = await UserModel.find(searchQuery);
+  let candidates = await UserModel.aggregate([
+    { $match: matchQuery },
+    { $limit: 20 },
+    {
+      $project: {
+        _id: 1,
+        username: 1,
+        personal_name: 1,
+        email: 1,
+        prodile_picture: 1,
+      },
+    },
+  ]);
 
-  candidates = candidates.map((candidate) => {
+  /* candidates = candidates.map((candidate) => {
     return new UserResponseData(candidate);
-  });
+  }); */
 
   return res.status(200).json(candidates);
+});
+
+UserController.get("/profile", async (req, res, next) => {
+  const objectUserId = new mongoose.Types.ObjectId(req.userInfo._id);
+  const profile = await UserModel.aggregate([
+    { $match: { _id: objectUserId } },
+    {
+      $project: {
+        username: 1,
+        personal_name: 1,
+        email: 1,
+        profile_picture: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json(profile[0]);
 });
 
 // utility functions

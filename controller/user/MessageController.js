@@ -69,6 +69,12 @@ MessageController.post(
   "/file",
   fileupload({
     createParentPath: true,
+    limits: { fileSize: 1024 * 1024 },
+    limitHandler: async (req, res, next) => {
+      return next(
+        ApiError.badRequest("file size surpass allowed limits of 1 megabytes")
+      );
+    },
   }),
   async (req, res, next) => {
     console.log("request files : ", req.files);
