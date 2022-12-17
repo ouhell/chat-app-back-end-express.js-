@@ -310,6 +310,23 @@ UserController.get("/profile", async (req, res, next) => {
   res.status(200).json(profile[0]);
 });
 
+UserController.put(
+  "/profile",
+  ErrorCatcher(async (req, res, next) => {
+    console.log("update profile data :", req.body);
+    const { username, personal_name, email } = req.body;
+    if (!(username && personal_name && email))
+      return next(ApiError.badRequest("value not provided"));
+    const user = await UserModel.findById(req.userInfo._id);
+    user.username = username;
+    user.personal_name = personal_name;
+    user.email = email;
+    console.log("updated user :", user);
+    const savedUser = await user.save();
+    res.status(200).json(savedUser);
+  })
+);
+
 // utility functions
 
 function createConversationId(id1, id2) {
