@@ -6,6 +6,14 @@ const UserModel = require("../../schema/user/UserModel");
 const ApiError = require("../../error/ApiError");
 const ErrorCatcher = require("../../error/ErrorCatcher");
 const fileupload = require("express-fileupload");
+const { storage } = require("../../firebase/config");
+const {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} = require("firebase/storage");
+const { v4 } = require("uuid");
 
 const MessageController = express.Router();
 
@@ -21,20 +29,20 @@ MessageController.post(
       !message.trim()
     )
       return next(ApiError.badRequest("invalid message"));
+
     if (!mongoose.Types.ObjectId.isValid(conversation_id))
       return next(ApiError.badRequest("invalid coversation"));
 
-    const userId = req.userInfo._id;
-    const conversation = await CoversationModel.findById(conversation_id);
-
+    const conversation = await CoversationModel.exists({
+      _id: conversation_id,
+      users: user_id,
+    });
+    console.log("conv exists :", conversation);
     if (!conversation) return next(ApiError.notFound("can't find coversation"));
 
-    if (!conversation.users.find((user) => user._id.toString() === user_id))
-      return next(ApiError.forbidden("invalid contact"));
-
     const createdMessage = await MessageModel.create({
-      sender: userId,
-      conversation: conversation._id,
+      sender: user_id,
+      conversation: conversation_id,
       message: message,
       content_type: "text",
     });
@@ -66,7 +74,7 @@ MessageController.get(
 );
 
 MessageController.post(
-  "/file",
+  "/image/:conversation_id",
   fileupload({
     createParentPath: true,
     limits: { fileSize: 1024 * 1024 },
@@ -77,8 +85,51 @@ MessageController.post(
     },
   }),
   async (req, res, next) => {
-    console.log("request files : ", req.files);
-    return res.sendStatus(200);
+    const conversation_id = req.params.conversation_id;
+    const user_id = req.userInfo._id;
+    console.log("convo", conversation_id);
+    const acceptedImageTypes = ["image/gif", "image/jpeg", "image/png"];
+
+    if (!req.files) return next(ApiError.badRequest("no file"));
+    const file = req.files.file;
+    console.log("request file : ", file);
+    if (!file) return next(ApiError.badRequest("no file"));
+
+    if (!acceptedImageTypes.includes(file.mimetype))
+      return next(ApiError.badRequest("only accept .png .jpg .gif"));
+
+    const metadata = {
+      contentType: file.mimetype,
+    };
+
+    const conversation = await CoversationModel.exists({
+      _id: conversation_id,
+      users: user_id,
+    });
+
+    if (!conversation) return next(ApiError.notFound("can't find coversation"));
+
+    const fileRef = ref(storage, "images/" + v4());
+
+    let url = null;
+
+    await uploadBytes(fileRef, file.data, metadata);
+
+    url = await getDownloadURL(fileRef);
+
+    try {
+      const createdMessage = await MessageModel.create({
+        sender: user_id,
+        conversation: new mongoose.Types.ObjectId(conversation_id),
+        content: url,
+        content_type: "image",
+      });
+
+      return res.status(201).json(createdMessage);
+    } catch (err) {
+      deleteObject(fileRef);
+      next(ApiError.internal("couldnt send message"));
+    }
   }
 );
 

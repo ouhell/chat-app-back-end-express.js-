@@ -2,13 +2,7 @@ const mongoose = require("mongoose");
 
 const ConverstionSchema = mongoose.Schema({
   identifier: { type: String, required: true },
-  users: [
-    {
-      _id: { type: mongoose.Types.ObjectId, required: true },
-      username: { type: String, required: true },
-      personal_name: { type: String, required: true },
-    },
-  ],
+  users: [{ type: mongoose.Types.ObjectId }],
   blocked: [{ type: mongoose.Types.ObjectId }],
   creation_date: { type: Date, default: Date.now },
 });

@@ -7,7 +7,14 @@ const UserController = express.Router();
 const ErrorCatcher = require("../../error/ErrorCatcher");
 const ApiError = require("../../error/ApiError");
 const UserResponseData = require("../../data/user/UserResponseData");
-const EncryptionHandler = require("../../security/EncryptionHandler");
+const fileUpload = require("express-fileupload");
+const { storage } = require("../../firebase/config");
+const {
+  deleteObject,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} = require("firebase/storage");
 
 //get user by id
 UserController.get(
@@ -26,23 +33,47 @@ UserController.get(
 UserController.get(
   "/user-contact",
   ErrorCatcher(async (req, res, next) => {
-    const conversations = await ConversationModel.find({
-      identifier: { $regex: new RegExp(req.userInfo._id) },
-    });
-    const filteredList = conversations.reduce((reduced, convo, i) => {
-      let { _id, username, personal_name } = convo.users.find(
-        (user) => user._id.toString() !== req.userInfo._id
-      );
+    const conversations = await ConversationModel.aggregate([
+      {
+        $match: {
+          identifier: { $regex: new RegExp(req.userInfo._id) },
+        },
+      },
+      {
+        $unwind: "$users",
+      },
 
-      reduced.push({
-        _id,
-        username,
-        personal_name,
-        conversation_id: convo._id,
-      });
-      return reduced;
-    }, []);
-    res.status(200).json(filteredList);
+      {
+        $lookup: {
+          from: "users",
+          localField: "users",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $match: {
+          users: {
+            $not: { $eq: new mongoose.Types.ObjectId(req.userInfo._id) },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          identifier: 1,
+          creation_date: 1,
+          "user.username": 1,
+          "user.personal_name": 1,
+          "user.email": 1,
+          "user.profile_picture": 1,
+        },
+      },
+    ]);
+    console.log("convos", conversations);
+
+    return res.status(200).json(conversations);
   })
 );
 
@@ -106,18 +137,7 @@ UserController.post(
 
     const newConvo = await ConversationModel.create({
       identifier: convo_indentifier,
-      users: [
-        {
-          _id: user._id,
-          username: user.username,
-          personal_name: user.personal_name,
-        },
-        {
-          _id: contact._id,
-          username: contact.username,
-          personal_name: contact.personal_name,
-        },
-      ],
+      users: [user._id, contact._id],
     });
     res.status(200).json(newConvo);
   })
@@ -252,10 +272,8 @@ UserController.get("/request/candidates", async (req, res, next) => {
 
   // get all users in contact with current user
   const contacts = conversations.map((convo) => {
-    let user = convo.users.find(
-      (user) => user._id.toString() !== req.userInfo._id
-    );
-    return user._id;
+    let user = convo.users.find((user) => user.toString() !== req.userInfo._id);
+    return user;
   });
 
   filterList = contacts.concat(requested);
@@ -325,6 +343,34 @@ UserController.put(
     const savedUser = await user.save();
     res.status(200).json(savedUser);
   })
+);
+
+UserController.put(
+  "/profile/picture",
+  fileUpload({
+    limits: 1024 * 1024 * 3,
+    limitHandler: (req, res, next) => {
+      return next(ApiError.badRequest("image surpass the size limit of 3mb"));
+    },
+  }),
+  async (req, res, next) => {
+    const image = req.files.profile_pic;
+    console.log(image);
+    if (!image) return next(ApiError.badRequest("no image"));
+    imageRef = ref(storage, "profile/" + req.userInfo._id);
+    const metadata = {
+      contentType: image.mimetype,
+    };
+    await uploadBytes(imageRef, image.data, metadata);
+    const url = await getDownloadURL(imageRef);
+    await UserModel.findByIdAndUpdate(req.userInfo._id, {
+      profile_picture: url,
+    });
+
+    return res.status(203).json({
+      newUrl: url,
+    });
+  }
 );
 
 // utility functions
