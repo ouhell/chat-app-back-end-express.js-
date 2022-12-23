@@ -71,7 +71,6 @@ UserController.get(
         },
       },
     ]);
-    console.log("convos", conversations);
 
     return res.status(200).json(conversations);
   })
@@ -198,14 +197,12 @@ UserController.post(
     if (!mongoose.Types.ObjectId.isValid(destinator))
       return next(ApiError.badRequest("invalid destinator id"));
     const destinatorExists = await UserModel.exists({ _id: destinator });
-    console.log("destinator existence : ", destinatorExists);
     if (!destinatorExists)
       return next(ApiError.forbidden("destinator does not exists"));
 
     const contactAlreadyExists = await ConversationModel.exists({
       identifier: createConversationId(req.userInfo._id, destinator),
     });
-    console.log("contact existence :", contactAlreadyExists);
     if (contactAlreadyExists)
       return next(ApiError.forbidden("contact already exists"));
 
@@ -234,8 +231,6 @@ UserController.delete("/request/:requestId", async (req, res, next) => {
   const request = await RequestModel.findById(postedId);
 
   if (!request) return next(ApiError.notFound("request does not exists"));
-  console.log("requestor", request.requester);
-  console.log("destinator", request.destinator);
 
   if (
     request.requester.toString() !== req.userInfo._id &&
@@ -253,7 +248,6 @@ UserController.delete("/request/:requestId", async (req, res, next) => {
 //get user that can be sent a request
 UserController.get("/request/candidates", async (req, res, next) => {
   const searchtext = req.query.search;
-  console.log("searchtext :", searchtext);
 
   const requests = await RequestModel.find({
     $or: [{ requester: req.userInfo._id }, { destinator: req.userInfo._id }],
@@ -278,7 +272,6 @@ UserController.get("/request/candidates", async (req, res, next) => {
 
   filterList = contacts.concat(requested);
   filterList.push(mongoose.Types.ObjectId(req.userInfo._id));
-  console.log("filter list", filterList);
 
   const matchQuery = {
     _id: { $not: { $in: filterList } },
@@ -299,7 +292,7 @@ UserController.get("/request/candidates", async (req, res, next) => {
         username: 1,
         personal_name: 1,
         email: 1,
-        prodile_picture: 1,
+        profile_picture: 1,
       },
     },
   ]);
@@ -331,7 +324,6 @@ UserController.get("/profile", async (req, res, next) => {
 UserController.put(
   "/profile",
   ErrorCatcher(async (req, res, next) => {
-    console.log("update profile data :", req.body);
     const { username, personal_name, email } = req.body;
     if (!(username && personal_name && email))
       return next(ApiError.badRequest("value not provided"));
@@ -339,7 +331,6 @@ UserController.put(
     user.username = username;
     user.personal_name = personal_name;
     user.email = email;
-    console.log("updated user :", user);
     const savedUser = await user.save();
     res.status(200).json(savedUser);
   })
@@ -355,7 +346,6 @@ UserController.put(
   }),
   async (req, res, next) => {
     const image = req.files.profile_pic;
-    console.log(image);
     if (!image) return next(ApiError.badRequest("no image"));
     imageRef = ref(storage, "profile/" + req.userInfo._id);
     const metadata = {

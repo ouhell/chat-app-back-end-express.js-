@@ -8,13 +8,10 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log("user connected : ", socket.id);
   socket.on("private chat", (conversation) => {
-    console.log(`socket ${socket.id} joined convo :`, conversation);
     socket.join(conversation);
   });
   socket.on("send message", (message) => {
-    console.log(`received message :`, message);
     socket.in(message.conversation).emit("receive message", message);
   });
 });

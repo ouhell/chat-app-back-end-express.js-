@@ -37,6 +37,45 @@ AuthentificationController.post(
   })
 );
 
+AuthentificationController.get(
+  "/usernameExist/:checkUsername",
+  async (req, res, next) => {
+    const checkUsername = req.params.checkUsername;
+    console.log("chekcUsername", checkUsername);
+    const username = await UserModel.exists({
+      username: checkUsername,
+    });
+    console.log("username", username);
+    if (username) return res.status(200).json(true);
+
+    return res.status(200).json(false);
+  }
+);
+AuthentificationController.get(
+  "/emailExist/:checkEmail",
+  async (req, res, next) => {
+    const checkEmail = req.params.checkEmail;
+    console.log("checkEmail", checkEmail);
+    const email = await UserModel.exists({
+      email: checkEmail,
+    });
+    console.log("email", email);
+    if (email) return res.status(200).json(true);
+
+    return res.status(200).json(false);
+  }
+);
+
+AuthentificationController.post("/signup", async (req, res, next) => {
+  let { username, personal_name, password, email } = req.body;
+  password = EncryptionHandler.encrypt(password);
+  const user = new UserModel({ username, personal_name, password, email });
+
+  const createdUser = await user.save();
+
+  return res.status(201).json(createdUser);
+});
+
 AuthentificationController;
 
 module.exports = AuthentificationController;

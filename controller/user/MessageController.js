@@ -37,7 +37,6 @@ MessageController.post(
       _id: conversation_id,
       users: user_id,
     });
-    console.log("conv exists :", conversation);
     if (!conversation) return next(ApiError.notFound("can't find coversation"));
 
     const createdMessage = await MessageModel.create({
@@ -87,12 +86,10 @@ MessageController.post(
   async (req, res, next) => {
     const conversation_id = req.params.conversation_id;
     const user_id = req.userInfo._id;
-    console.log("convo", conversation_id);
     const acceptedImageTypes = ["image/gif", "image/jpeg", "image/png"];
 
     if (!req.files) return next(ApiError.badRequest("no file"));
     const file = req.files.file;
-    console.log("request file : ", file);
     if (!file) return next(ApiError.badRequest("no file"));
 
     if (!acceptedImageTypes.includes(file.mimetype))
