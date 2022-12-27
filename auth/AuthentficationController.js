@@ -33,7 +33,13 @@ AuthentificationController.post(
 
     res
       .status(200)
-      .json({ access_token, userId: user._id, userRole: user.role });
+      .json({
+        access_token,
+        userId: user._id,
+        userRole: user.role,
+        username: user.username,
+        profile_picture: user.profile_picture,
+      });
   })
 );
 
