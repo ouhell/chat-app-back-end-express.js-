@@ -85,6 +85,7 @@ MessageController.post(
   }),
   async (req, res, next) => {
     const conversation_id = req.params.conversation_id;
+
     const user_id = req.userInfo._id;
     const acceptedImageTypes = ["image/gif", "image/jpeg", "image/png"];
 
@@ -120,6 +121,67 @@ MessageController.post(
         conversation: new mongoose.Types.ObjectId(conversation_id),
         content: url,
         content_type: "image",
+      });
+
+      return res.status(201).json(createdMessage);
+    } catch (err) {
+      deleteObject(fileRef);
+      next(ApiError.internal("couldnt send message"));
+    }
+  }
+);
+
+MessageController.post(
+  "/voice/:conversation_id",
+  fileupload({
+    createParentPath: true,
+    limits: { fileSize: 1024 * 1024 * 5 },
+    limitHandler: async (req, res, next) => {
+      return next(
+        ApiError.badRequest("file size surpass allowed limits of 5 megabytes")
+      );
+    },
+  }),
+  async (req, res, next) => {
+    const conversation_id = req.params.conversation_id;
+    console.log("convo :", conversation_id);
+    const user_id = req.userInfo._id;
+    const acceptedAudioTypes = ["audio/mp3"];
+
+    if (!req.files) return next(ApiError.badRequest("no file"));
+    const file = req.files.voice;
+    if (!file) return next(ApiError.badRequest("no file"));
+
+    if (!acceptedAudioTypes.includes(file.mimetype))
+      return next(ApiError.badRequest("only accept mp3"));
+
+    const metadata = {
+      contentType: file.mimetype,
+    };
+
+    const conversation = await CoversationModel.exists({
+      _id: conversation_id,
+      users: user_id,
+    });
+
+    if (!conversation) return next(ApiError.notFound("can't find coversation"));
+
+    console.log("voice message", req.files.voice);
+
+    const fileRef = ref(storage, "audio/" + v4());
+
+    // let url = null;
+
+    await uploadBytes(fileRef, file.data, metadata);
+
+    url = await getDownloadURL(fileRef);
+
+    try {
+      const createdMessage = await MessageModel.create({
+        sender: user_id,
+        conversation: new mongoose.Types.ObjectId(conversation_id),
+        content: url,
+        content_type: "voice",
       });
 
       return res.status(201).json(createdMessage);
