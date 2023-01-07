@@ -9,7 +9,6 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
   socket.on("private chat", (conversation) => {
-    console.log("joining :", conversation);
     socket.join(conversation);
   });
   socket.on("send message", (message) => {

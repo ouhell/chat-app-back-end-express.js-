@@ -83,7 +83,7 @@ MessageController.post(
       );
     },
   }),
-  async (req, res, next) => {
+  ErrorCatcher(async (req, res, next) => {
     const conversation_id = req.params.conversation_id;
 
     const user_id = req.userInfo._id;
@@ -128,7 +128,7 @@ MessageController.post(
       deleteObject(fileRef);
       next(ApiError.internal("couldnt send message"));
     }
-  }
+  })
 );
 
 MessageController.post(
@@ -142,11 +142,10 @@ MessageController.post(
       );
     },
   }),
-  async (req, res, next) => {
+  ErrorCatcher(async (req, res, next) => {
     const conversation_id = req.params.conversation_id;
-    console.log("convo :", conversation_id);
     const user_id = req.userInfo._id;
-    const acceptedAudioTypes = ["audio/mp3"];
+    const acceptedAudioTypes = ["audio/mp3", "audio/webm"];
 
     if (!req.files) return next(ApiError.badRequest("no file"));
     const file = req.files.voice;
@@ -166,9 +165,10 @@ MessageController.post(
 
     if (!conversation) return next(ApiError.notFound("can't find coversation"));
 
-    console.log("voice message", req.files.voice);
-
-    const fileRef = ref(storage, "audio/" + v4());
+    const fileRef = ref(
+      storage,
+      "audio/" + v4() + "." + file.mimetype.substr(6)
+    );
 
     // let url = null;
 
@@ -189,7 +189,7 @@ MessageController.post(
       deleteObject(fileRef);
       next(ApiError.internal("couldnt send message"));
     }
-  }
+  })
 );
 
 module.exports = MessageController;
