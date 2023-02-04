@@ -8,6 +8,9 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
+  socket.on("self connect", (userId) => {
+    socket.join(userId);
+  });
   socket.on("private chat", (conversation) => {
     socket.join(conversation);
   });
@@ -15,6 +18,13 @@ io.on("connection", (socket) => {
     // console.log("message broadcasted :", message.message);
     socket.in(message.conversation).emit("receive message", message);
   });
+  socket.on("delete message", (message) => {
+    socket.in(message.conversation).emit("remove message", message);
+  });
+  socket.on("notify request", (request) => {
+    socket.in(request.destinator).emit("receive request", request);
+  });
+  socket;
 });
 
 module.exports = io;
