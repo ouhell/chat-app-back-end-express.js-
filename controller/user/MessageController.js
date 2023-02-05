@@ -91,6 +91,29 @@ MessageController.get(
       },
       { $sort: { sent_date: -1 } },
       { $limit: 30 },
+      {
+        $lookup: {
+          localField: "sender",
+          foreignField: "_id",
+          from: "users",
+          as: "sender",
+        },
+      },
+      { $unwind: "$sender" },
+      {
+        $project: {
+          _id: 1,
+          conversation: 1,
+          message: 1,
+          content_type: 1,
+          content: 1,
+          sent_date: 1,
+          "sender._id": 1,
+          "sender.username": 1,
+          "sender.personal_name": 1,
+          "sender.profile_picture": 1,
+        },
+      },
     ]);
     messages.reverse();
     res.status(200).json(messages);
