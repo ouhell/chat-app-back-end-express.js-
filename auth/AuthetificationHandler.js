@@ -1,12 +1,21 @@
 const jwt = require("jsonwebtoken");
 const ApiError = require("../error/ApiError");
 const METHOD_SIGNATURES = ["GET", "POST", "PUT", "DELETE"];
-const allowed_paths = []; //hold paths allowed without authentification
+const protected_paths = []; // hold paths that need authentification to access
+const allowed_paths = []; //hold protected paths allowed without authentification
 const role_dependant_paths = []; // hold paths that need certain roles to proceed
+
+function protectPath(path) {
+  if (!path.trim()) return;
+  if (protected_paths.includes(path)) return;
+
+  protected_paths.push(path);
+}
+
 function allowPath(path, ...methods) {
   if (!path.trim()) return;
   if (allowed_paths.includes(path)) return;
-  let isCorrespondinglist = true;
+
   methods = methods
     .map((method) => method.toUpperCase())
     .filter((method) => METHOD_SIGNATURES.includes(method));
@@ -21,6 +30,18 @@ function bindRole(path, ...roles) {
     path: path,
     roles: roles,
   });
+}
+
+function checkProtected(path, method) {
+  let isProtected = false;
+  for (protectedPath of protected_paths) {
+    if (comparePaths(path, protectedPath)) {
+      isProtected = true;
+      break;
+    }
+  }
+
+  return isProtected;
 }
 
 function checkAllowed(path, method) {
@@ -62,6 +83,7 @@ function comparePaths(excatPath, pathModel) {
 }
 
 function AuthentificationHandler(req, res, next) {
+  if (!checkProtected(req.url)) return next();
   if (checkAllowed(req.url, req.method)) return next(); // if path is allowed without authentification
   const authorization = req.headers.authorization;
 
@@ -76,4 +98,4 @@ function AuthentificationHandler(req, res, next) {
   });
 }
 
-module.exports = { AuthentificationHandler, allowPath, bindRole };
+module.exports = { AuthentificationHandler, allowPath, bindRole, protectPath };

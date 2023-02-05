@@ -6,6 +6,7 @@ const MessageSchema = mongoose.Schema({
   conversation: {
     type: mongoose.Types.ObjectId,
     immutable: true,
+    required: true,
   },
   sent_date: { type: Date, default: () => Date.now(), immutable: true },
   edited_date: Date,
