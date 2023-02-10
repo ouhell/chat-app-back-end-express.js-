@@ -5,6 +5,7 @@ const ConverstionSchema = mongoose.Schema({
   users: [{ type: mongoose.Types.ObjectId }],
   blocked: [{ type: mongoose.Types.ObjectId }],
   creation_date: { type: Date, default: Date.now },
+  name: String,
 });
 
 module.exports = mongoose.model("conversations", ConverstionSchema);

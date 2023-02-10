@@ -1,7 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const MessageModel = require("../../schema/message/MessageModel");
-const CoversationModel = require("../../schema/message/ConversationModel");
+const ConversationModel = require("../../schema/message/ConversationModel");
 const UserModel = require("../../schema/user/UserModel");
 const ApiError = require("../../error/ApiError");
 const ErrorCatcher = require("../../error/ErrorCatcher");
@@ -18,11 +18,14 @@ const { v4 } = require("uuid");
 const MessageController = express.Router();
 
 MessageController.post(
-  "/messages",
+  "/messages/:conversation_id",
   ErrorCatcher(async (req, res, next) => {
-    const conversation_id = req.body.conversation_id;
+    const conversation_id = req.params.conversation_id;
     const user_id = req.userInfo._id;
     const message = req.body.message;
+
+    if (!mongoose.Types.ObjectId.isValid(conversation_id))
+      return next(ApiError.badRequest("invalid coversation"));
 
     if (
       !(typeof message === "string" || message instanceof String) ||
@@ -30,10 +33,7 @@ MessageController.post(
     )
       return next(ApiError.badRequest("invalid message"));
 
-    if (!mongoose.Types.ObjectId.isValid(conversation_id))
-      return next(ApiError.badRequest("invalid coversation"));
-
-    const conversation = await CoversationModel.exists({
+    const conversation = await ConversationModel.exists({
       _id: conversation_id,
       users: user_id,
     });
@@ -49,6 +49,7 @@ MessageController.post(
     res.status(201).json(createdMessage);
   })
 );
+
 MessageController.delete("/messages/:message_id", async (req, res, next) => {
   let message_id = req.params.message_id;
   const userId = req.userInfo._id;
@@ -75,7 +76,7 @@ MessageController.get(
       return next(ApiError.badRequest("invalid conversation"));
 
     const userId = req.userInfo._id;
-    const conversation = await CoversationModel.findById(conversation_id);
+    const conversation = await ConversationModel.findById(conversation_id);
 
     if (!conversation) return next(ApiError.notFound("can't find coversation"));
 
@@ -148,7 +149,7 @@ MessageController.post(
       contentType: file.mimetype,
     };
 
-    const conversation = await CoversationModel.exists({
+    const conversation = await ConversationModel.exists({
       _id: conversation_id,
       users: user_id,
     });
@@ -206,7 +207,7 @@ MessageController.post(
       contentType: file.mimetype,
     };
 
-    const conversation = await CoversationModel.exists({
+    const conversation = await ConversationModel.exists({
       _id: conversation_id,
       users: user_id,
     });
@@ -240,11 +241,88 @@ MessageController.post(
   })
 );
 
+MessageController.get("/public/conversations", async (req, res, next) => {
+  const publicConversations = await ConversationModel.find({
+    identifier: "public",
+  });
+  return res.status(200).json(publicConversations);
+});
+
+MessageController.get(
+  "/public/messages/:conversation_id",
+  ErrorCatcher(async (req, res, next) => {
+    const conversation_id = req.params.conversation_id;
+
+    if (!mongoose.Types.ObjectId.isValid(conversation_id))
+      return next(ApiError.badRequest("invalid conversation id"));
+
+    const conversation_object_id = new mongoose.Types.ObjectId(conversation_id);
+
+    const publicConversationExists = await ConversationModel.exists({
+      _id: conversation_object_id,
+      identifier: "public",
+    });
+
+    if (!publicConversationExists)
+      return next(ApiError.notFound("conversation doesn't exist"));
+
+    const messages = await MessageModel.aggregate([
+      {
+        $match: {
+          conversation: conversation_object_id,
+          hidden: false,
+        },
+      },
+      { $sort: { sent_date: -1 } },
+      { $limit: 30 },
+      {
+        $lookup: {
+          localField: "sender",
+          foreignField: "_id",
+          from: "users",
+          as: "sender",
+        },
+      },
+      { $unwind: "$sender" },
+      {
+        $project: {
+          _id: 1,
+          conversation: 1,
+          message: 1,
+          content_type: 1,
+          content: 1,
+          sent_date: 1,
+          "sender._id": 1,
+          "sender.username": 1,
+          "sender.personal_name": 1,
+          "sender.profile_picture": 1,
+        },
+      },
+    ]);
+    messages.reverse();
+    res.status(200).json(messages);
+  })
+);
+
 MessageController.post(
-  "/public/messages",
+  "/public/messages/:conversation_id",
   ErrorCatcher(async (req, res, next) => {
     const user_id = req.userInfo._id;
+    const conversation_id = req.params.conversation_id;
     const message = req.body.message;
+
+    if (!mongoose.Types.ObjectId.isValid(conversation_id))
+      return next(ApiError.badRequest("invalid conversation id"));
+
+    const conversation_object_id = new mongoose.Types.ObjectId(conversation_id);
+
+    const publicConversationExists = await ConversationModel.exists({
+      _id: conversation_object_id,
+      identifier: "public",
+    });
+
+    if (!publicConversationExists)
+      return next(ApiError.notFound("cant find public conversation"));
 
     if (
       !(typeof message === "string" || message instanceof String) ||
@@ -252,34 +330,21 @@ MessageController.post(
     )
       return next(ApiError.badRequest("invalid message"));
 
-    const createdMessage = await MessageModel.create({
+    const newMessage = {
       sender: user_id,
       message: message,
+      conversation: conversation_object_id,
       content_type: "text",
-    });
+    };
+
+    const createdMessage = await MessageModel.create(newMessage);
 
     res.status(201).json(createdMessage);
   })
 );
 
-MessageController.get(
-  "/messages",
-  ErrorCatcher(async (req, res, next) => {
-    const userId = req.userInfo._id;
-
-    if (!conversation.users.find((user) => user._id.toString() === userId))
-      return next(ApiError.forbidden("invalid contact"));
-
-    const messages = await MessageModel.aggregate([
-      { $match: { conversation: { $exists: false } } },
-      { $limit: 30 },
-    ]);
-    res.status(200).json(messages);
-  })
-);
-
 MessageController.post(
-  "/public/image",
+  "/public/image/:conversation_id",
   fileupload({
     createParentPath: true,
     limits: { fileSize: 1024 * 1024 },
@@ -292,6 +357,12 @@ MessageController.post(
   ErrorCatcher(async (req, res, next) => {
     const user_id = req.userInfo._id;
     const acceptedImageTypes = ["image/gif", "image/jpeg", "image/png"];
+    const conversation_id = req.params.conversation_id;
+
+    if (!mongoose.Types.ObjectId.isValid(conversation_id))
+      return next(ApiError.badRequest("invalid conversation id"));
+
+    const conversation_object_id = new mongoose.Types.ObjectId(conversation_id);
 
     if (!req.files) return next(ApiError.badRequest("no file"));
     const file = req.files.file;
@@ -317,6 +388,7 @@ MessageController.post(
         sender: user_id,
         content: url,
         content_type: "image",
+        conversation: conversation_object_id,
       });
 
       return res.status(201).json(createdMessage);
@@ -328,7 +400,7 @@ MessageController.post(
 );
 
 MessageController.post(
-  "/public/voice",
+  "/public/voice/:conversation_id",
   fileupload({
     createParentPath: true,
     limits: { fileSize: 1024 * 1024 * 5 },
@@ -341,6 +413,12 @@ MessageController.post(
   ErrorCatcher(async (req, res, next) => {
     const user_id = req.userInfo._id;
     const acceptedAudioTypes = ["audio/mp3", "audio/webm"];
+    const conversation_id = req.params.conversation_id;
+
+    if (!mongoose.Types.ObjectId.isValid(conversation_id))
+      return next(ApiError.badRequest("invalid conversation id"));
+
+    const conversation_object_id = new mongoose.Types.ObjectId(conversation_id);
 
     if (!req.files) return next(ApiError.badRequest("no file"));
     const file = req.files.voice;
@@ -369,6 +447,7 @@ MessageController.post(
         sender: user_id,
         content: url,
         content_type: "voice",
+        conversation: conversation_object_id,
       });
 
       return res.status(201).json(createdMessage);

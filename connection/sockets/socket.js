@@ -11,7 +11,7 @@ io.on("connection", (socket) => {
   socket.on("self connect", (userId) => {
     socket.join(userId);
   });
-  socket.on("private chat", (conversation) => {
+  socket.on("chat", (conversation) => {
     socket.join(conversation);
   });
   socket.on("send message", (message) => {
