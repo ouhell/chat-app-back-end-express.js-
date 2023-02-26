@@ -17,7 +17,7 @@ AuthentificationController.post(
     });
     // if user with given username or email does not exist in the database
     if (!user) {
-      next(ApiError.unauthorized(`user  "${identifier}" not found`));
+      next(ApiError.unauthorized(`incorrect username`));
       return;
     }
     // if password does not match

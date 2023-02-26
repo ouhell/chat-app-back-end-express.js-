@@ -11,6 +11,16 @@ io.on("connection", (socket) => {
   socket.on("self connect", (userId) => {
     socket.join(userId);
   });
+
+  socket.on("send request", (request) => {
+    socket.in(request.destinator._id).emit("receive request", request);
+    socket.in(request.requester._id).emit("receive request", request);
+  });
+
+  socket.on("cancel request", (request) => {
+    socket.in(request.destinator).emit("canceled request", request._id);
+    socket.in(request.requester).emit("canceled request", request._id);
+  });
   socket.on("chat", (conversation) => {
     socket.join(conversation);
   });

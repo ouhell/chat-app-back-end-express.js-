@@ -17,39 +17,7 @@ const { v4 } = require("uuid");
 
 const MessageController = express.Router();
 
-MessageController.post(
-  "/messages/:conversation_id",
-  ErrorCatcher(async (req, res, next) => {
-    const conversation_id = req.params.conversation_id;
-    const user_id = req.userInfo._id;
-    const message = req.body.message;
-
-    if (!mongoose.Types.ObjectId.isValid(conversation_id))
-      return next(ApiError.badRequest("invalid coversation"));
-
-    if (
-      !(typeof message === "string" || message instanceof String) ||
-      !message.trim()
-    )
-      return next(ApiError.badRequest("invalid message"));
-
-    const conversation = await ConversationModel.exists({
-      _id: conversation_id,
-      users: user_id,
-    });
-    if (!conversation) return next(ApiError.notFound("can't find coversation"));
-
-    const createdMessage = await MessageModel.create({
-      sender: user_id,
-      conversation: conversation_id,
-      message: message,
-      content_type: "text",
-    });
-
-    res.status(201).json(createdMessage);
-  })
-);
-
+// delete message
 MessageController.delete("/messages/:message_id", async (req, res, next) => {
   let message_id = req.params.message_id;
   const userId = req.userInfo._id;
@@ -68,6 +36,7 @@ MessageController.delete("/messages/:message_id", async (req, res, next) => {
   return res.sendStatus(202);
 });
 
+// get all messages in a private/group conversation
 MessageController.get(
   "/messages/:conversation_id",
   ErrorCatcher(async (req, res, next) => {
@@ -117,10 +86,54 @@ MessageController.get(
       },
     ]);
     messages.reverse();
-    res.status(200).json(messages);
+
+    res.status(200).json({ conversation, messages });
   })
 );
 
+// post text message to private conversation
+MessageController.post(
+  "/messages/:conversation_id",
+  ErrorCatcher(async (req, res, next) => {
+    const conversation_id = req.params.conversation_id;
+    const user_id = req.userInfo._id;
+    const message = req.body.message;
+
+    if (!mongoose.Types.ObjectId.isValid(conversation_id))
+      return next(ApiError.badRequest("invalid coversation"));
+
+    if (
+      !(typeof message === "string" || message instanceof String) ||
+      !message.trim()
+    )
+      return next(ApiError.badRequest("invalid message"));
+    // find if conversation exists and not blocked
+    const conversation = await ConversationModel.exists({
+      _id: conversation_id,
+      users: user_id,
+      blocked: { $ne: user_id },
+    });
+    if (!conversation) {
+      const conv = await ConversationModel.exists({
+        _id: conversation_id,
+        users: user_id,
+      });
+      if (conv) return next(ApiError.forbidden("blocked"));
+      return next(ApiError.notFound("can't find coversation"));
+    }
+
+    const createdMessage = await MessageModel.create({
+      sender: user_id,
+      conversation: conversation_id,
+      message: message,
+      content_type: "text",
+    });
+
+    res.status(201).json(createdMessage);
+  })
+);
+
+// post image to  private conversation
 MessageController.post(
   "/image/:conversation_id",
   fileupload({
@@ -149,12 +162,20 @@ MessageController.post(
       contentType: file.mimetype,
     };
 
+    // find if conversation exists and not blocked
     const conversation = await ConversationModel.exists({
       _id: conversation_id,
       users: user_id,
+      blocked: { $ne: user_id },
     });
-
-    if (!conversation) return next(ApiError.notFound("can't find coversation"));
+    if (!conversation) {
+      const conv = await ConversationModel.exists({
+        _id: conversation_id,
+        users: user_id,
+      });
+      if (conv) return next(ApiError.forbidden("blocked"));
+      return next(ApiError.notFound("can't find conversation"));
+    }
 
     const fileRef = ref(storage, "images/" + v4());
 
@@ -180,6 +201,7 @@ MessageController.post(
   })
 );
 
+// post voice message to private conversation
 MessageController.post(
   "/voice/:conversation_id",
   fileupload({
@@ -194,6 +216,7 @@ MessageController.post(
   ErrorCatcher(async (req, res, next) => {
     const conversation_id = req.params.conversation_id;
     const user_id = req.userInfo._id;
+    const { duration } = req.body;
     const acceptedAudioTypes = ["audio/mp3", "audio/webm"];
 
     if (!req.files) return next(ApiError.badRequest("no file"));
@@ -202,17 +225,29 @@ MessageController.post(
 
     if (!acceptedAudioTypes.includes(file.mimetype))
       return next(ApiError.badRequest("only accept mp3"));
-
+    console.log("duration", duration);
+    console.log(Number.isNaN(duration));
     const metadata = {
       contentType: file.mimetype,
+      customMetadata: {
+        duration: Math.floor(duration) + "",
+      },
     };
 
+    // find if conversation exists and not blocked
     const conversation = await ConversationModel.exists({
       _id: conversation_id,
       users: user_id,
+      blocked: { $ne: user_id },
     });
-
-    if (!conversation) return next(ApiError.notFound("can't find coversation"));
+    if (!conversation) {
+      const conv = await ConversationModel.exists({
+        _id: conversation_id,
+        users: user_id,
+      });
+      if (conv) return next(ApiError.forbidden("blocked"));
+      return next(ApiError.notFound("can't find conversation"));
+    }
 
     const fileRef = ref(
       storage,
@@ -241,6 +276,7 @@ MessageController.post(
   })
 );
 
+// get all public conversations
 MessageController.get("/public/conversations", async (req, res, next) => {
   const publicConversations = await ConversationModel.find({
     identifier: "public",
@@ -248,6 +284,7 @@ MessageController.get("/public/conversations", async (req, res, next) => {
   return res.status(200).json(publicConversations);
 });
 
+// get all messages in a public conversation
 MessageController.get(
   "/public/messages/:conversation_id",
   ErrorCatcher(async (req, res, next) => {
@@ -258,12 +295,12 @@ MessageController.get(
 
     const conversation_object_id = new mongoose.Types.ObjectId(conversation_id);
 
-    const publicConversationExists = await ConversationModel.exists({
+    const conversation = await ConversationModel.findOne({
       _id: conversation_object_id,
       identifier: "public",
     });
 
-    if (!publicConversationExists)
+    if (!conversation)
       return next(ApiError.notFound("conversation doesn't exist"));
 
     const messages = await MessageModel.aggregate([
@@ -300,10 +337,11 @@ MessageController.get(
       },
     ]);
     messages.reverse();
-    res.status(200).json(messages);
+    res.status(200).json({ conversation, messages });
   })
 );
 
+// post text message to public conversation
 MessageController.post(
   "/public/messages/:conversation_id",
   ErrorCatcher(async (req, res, next) => {
@@ -343,6 +381,7 @@ MessageController.post(
   })
 );
 
+// post image to public conversation
 MessageController.post(
   "/public/image/:conversation_id",
   fileupload({
@@ -399,6 +438,7 @@ MessageController.post(
   })
 );
 
+// post voice message to public conversation
 MessageController.post(
   "/public/voice/:conversation_id",
   fileupload({

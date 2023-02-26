@@ -15,6 +15,7 @@ const {
   uploadBytes,
   getDownloadURL,
 } = require("firebase/storage");
+const MessageModel = require("../../schema/message/MessageModel");
 
 //get user by id
 UserController.get(
@@ -31,7 +32,7 @@ UserController.get(
 
 //get user contact list
 UserController.get(
-  "/user-contact",
+  "/contact",
   ErrorCatcher(async (req, res, next) => {
     const conversations = await ConversationModel.aggregate([
       {
@@ -113,6 +114,7 @@ UserController.post(
       user._id.toString(),
       request.requester.toString()
     );
+
     const conversation = await ConversationModel.exists({
       identifier: convo_indentifier,
     });
@@ -138,10 +140,104 @@ UserController.post(
     const newConvo = await ConversationModel.create({
       identifier: convo_indentifier,
       users: [user._id, contact._id],
+      admins: [user._id, contact._id],
     });
     res.status(200).json(newConvo);
   })
 );
+
+//delete contact
+UserController.delete("/user-contact/:id", async (req, res, next) => {
+  const contactId = req.params.id;
+  const userId = req.userInfo._id;
+
+  //check if convo already exists
+  const convo_indentifier = createConversationId(userId, contactId);
+
+  const conversation = await ConversationModel.exists({
+    identifier: convo_indentifier,
+  });
+  if (!conversation) {
+    return next(ApiError.badRequest("contact doesn't exist"));
+  }
+
+  await ConversationModel.deleteOne({ _id: conversation._id });
+  MessageModel.deleteMany({ conversation: conversation._id });
+  return res.sendStatus(204);
+});
+
+UserController.put("/blackList/:id", async (req, res, next) => {
+  const blackListedUserId = req.params.id;
+  const userId = req.userInfo._id;
+  if (!mongoose.Types.ObjectId.isValid(blackListedUser))
+    return next(ApiError.badRequest("invalid target user id"));
+  const user = await UserModel.findById(userId);
+  const convo_indentifier = createConversationId(userId, contactId);
+  const conversation = await ConversationModel.exists({
+    identifier: convo_indentifier,
+  });
+
+  if (conversation) {
+    await ConversationModel.deleteOne({ _id: conversation._id });
+    MessageModel.deleteMany({ conversation: conversation._id });
+  }
+  user.black_listed_users.push(new mongoose.Types.ObjectId(blackListedUserId));
+  await user.save();
+});
+
+// block user
+UserController.put("/blockUser", async (req, res, next) => {
+  const { userId: blockedUserId, conversationId } = req.body;
+  const userId = req.userInfo._id;
+  const convo_indentifier = createConversationId(userId, contactId);
+
+  if (!mongoose.Types.ObjectId.isValid(conversationId))
+    return next(ApiError.badRequest("invalid conversation id"));
+  if (!mongoose.Types.ObjectId.isValid(blockedUserId))
+    return next(ApiError.badRequest("invalid target user id"));
+
+  const conversation = await ConversationModel.findOne({
+    _id: convo_indentifier,
+  });
+  if (!conversation) return next(ApiError.notFound("conversation not found"));
+  if (!conversation.admins.find((user) => user._id.toString() === userId))
+    return next(ApiError.forbidden());
+  if (
+    conversation.blocked.find((user) => user._id.toString() === blockedUserId)
+  )
+    return next(ApiError.forbidden("user already blocked"));
+  conversation.blocked.push(new mongoose.Types.ObjectId(blockedUserId));
+  await conversation.save();
+  return res.sendStatus(200);
+});
+
+// unblock user
+UserController.put("/unblockUser", async (req, res, next) => {
+  const { userId: blockedUserId, conversationId } = req.body;
+  const userId = req.userInfo._id;
+  const convo_indentifier = createConversationId(userId, contactId);
+
+  if (!mongoose.Types.ObjectId.isValid(conversationId))
+    return next(ApiError.badRequest("invalid conversation id"));
+  if (!mongoose.Types.ObjectId.isValid(blockedUserId))
+    return next(ApiError.badRequest("invalid target user id"));
+
+  const conversation = await ConversationModel.findOne({
+    _id: convo_indentifier,
+  });
+  if (!conversation) return next(ApiError.notFound("conversation not found"));
+  if (!conversation.admins.find((user) => user._id.toString() === userId))
+    return next(ApiError.forbidden());
+  if (
+    conversation.blocked.find((user) => user._id.toString() === blockedUserId)
+  )
+    return next(ApiError.forbidden("user not blocked"));
+  conversation.blocked = conversation.blocked.filter(
+    (user) => user._id.toString() !== blockedUserId
+  );
+  await conversation.save();
+  return res.sendStatus(200);
+});
 
 UserController.get(
   "/request",
@@ -176,6 +272,7 @@ UserController.get(
       { $unwind: "$destinator" },
       {
         $project: {
+          _id: 1,
           "requester._id": 1,
           "requester.username": 1,
           "requester.personal_name": 1,
@@ -223,7 +320,41 @@ UserController.post(
       requester: req.userInfo._id,
       destinator,
     });
-    return res.status(201).json(request);
+    const appendedRequest = await RequestModel.aggregate([
+      { $match: { _id: request._id } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "requester",
+          foreignField: "_id",
+          as: "requester",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "destinator",
+          foreignField: "_id",
+          as: "destinator",
+        },
+      },
+      { $unwind: "$requester" },
+      { $unwind: "$destinator" },
+      {
+        $project: {
+          _id: 1,
+          "requester._id": 1,
+          "requester.username": 1,
+          "requester.personal_name": 1,
+          "requester.profile_picture": 1,
+          "destinator._id": 1,
+          "destinator.username": 1,
+          "destinator.personal_name": 1,
+          "destinator.profile_picture": 1,
+        },
+      },
+    ]);
+    return res.status(201).json(appendedRequest[0]);
   })
 );
 
@@ -244,11 +375,11 @@ UserController.delete(
     )
       return next(ApiError.forbidden("cant cancel unaffliated request"));
 
-    const deletedRequest = await RequestModel.deleteOne({
+    await RequestModel.deleteOne({
       _id: postedId,
     });
 
-    return res.status(204).json(deletedRequest);
+    return res.status(200).json(request);
   })
 );
 
@@ -257,6 +388,9 @@ UserController.get(
   "/request/candidates",
   ErrorCatcher(async (req, res, next) => {
     const searchtext = req.query.search;
+
+    const user = await UserModel.findById(req.userInfo._id);
+    const objectUserId = new mongoose.Types.ObjectId(req.userInfo._id);
 
     const requests = await RequestModel.find({
       $or: [{ requester: req.userInfo._id }, { destinator: req.userInfo._id }],
@@ -283,9 +417,11 @@ UserController.get(
 
     filterList = contacts.concat(requested);
     filterList.push(mongoose.Types.ObjectId(req.userInfo._id));
+    filterList.concat(user.black_listed_users);
 
     const matchQuery = {
       _id: { $not: { $in: filterList } },
+      black_listed_users: { $ne: objectUserId },
     };
     if (searchtext) {
       matchQuery["$or"] = [
@@ -296,7 +432,7 @@ UserController.get(
 
     let candidates = await UserModel.aggregate([
       { $match: matchQuery },
-      { $limit: 20 },
+      { $limit: 10 },
       {
         $project: {
           _id: 1,
@@ -304,13 +440,10 @@ UserController.get(
           personal_name: 1,
           email: 1,
           profile_picture: 1,
+          black_listed_users: 1,
         },
       },
     ]);
-
-    /* candidates = candidates.map((candidate) => {
-    return new UserResponseData(candidate);
-  }); */
 
     return res.status(200).json(candidates);
   })
@@ -358,37 +491,51 @@ UserController.get(
     res.status(200).json(profile[0]);
   })
 );
+
+// get contact by id
 UserController.get(
-  "/contact_profile/:id",
+  "/contact/:conversationId",
   ErrorCatcher(async (req, res, next) => {
-    const id = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(id))
-      return next(ApiError.badRequest("invalid convo id"));
-    const objectId = new mongoose.Types.ObjectId(id);
+    const conversationId = req.params.conversationId;
+    if (!mongoose.Types.ObjectId.isValid(conversationId))
+      return next(ApiError.badRequest("invalid conversation id"));
+    const objectId = new mongoose.Types.ObjectId(conversationId);
     const profile = await ConversationModel.aggregate([
-      { $match: { _id: objectId } },
+      {
+        $match: {
+          _id: objectId,
+        },
+      },
+      {
+        $unwind: "$users",
+      },
+
       {
         $lookup: {
           from: "users",
           localField: "users",
           foreignField: "_id",
-          as: "users",
+          as: "user",
         },
       },
-      { $unwind: "$users" },
+      { $unwind: "$user" },
       {
         $match: {
-          "users._id": {
+          users: {
             $not: { $eq: new mongoose.Types.ObjectId(req.userInfo._id) },
           },
         },
       },
       {
         $project: {
-          _id: 0,
-          username: "$users.username",
-          personal_name: "$users.personal_name",
-          profile_picture: "$users.profile_picture",
+          _id: 1,
+          identifier: 1,
+          creation_date: 1,
+          "user.username": 1,
+          "user.personal_name": 1,
+          "user.email": 1,
+          "user.profile_picture": 1,
+          "user._id": 1,
         },
       },
     ]);
@@ -448,12 +595,6 @@ function createConversationId(id1, id2) {
     return id1 + id2;
   }
   return id2 + id1;
-}
-
-function validatePassword(password) {
-  if (!password || !password instanceof String || password.length < 8)
-    return false;
-  return true;
 }
 
 module.exports = UserController;
