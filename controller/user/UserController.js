@@ -83,12 +83,11 @@ UserController.post(
   "/user-contact/:id",
   ErrorCatcher(async (req, res, next) => {
     const postedId = req.params.id;
+    const userId = req.userInfo._id;
     // check if id is valid mongo ObjectId
     if (!mongoose.Types.ObjectId.isValid(postedId)) {
       return next(ApiError.badRequest("invalid request id"));
     }
-
-    const user = await UserModel.findById(req.userInfo._id);
 
     //fetch the request
     const request = await RequestModel.findById(postedId);
@@ -98,20 +97,28 @@ UserController.post(
       return next(ApiError.forbidden(`request  does not exists`));
     }
 
-    if (!user) {
+    // cant accept request sent to others
+    if (userId !== request.destinator.toString())
+      return next(ApiError.forbidden("request not destined to user"));
+
+    const requester = await UserModel.findById(request.requester, {
+      username: 1,
+      personal_name: 1,
+      email: 1,
+      profile_picture: 1,
+      _id: 1,
+    });
+
+    if (!requester) {
       RequestModel.deleteOne({
         _id: postedId,
       });
       return next(ApiError.forbidden("USER DOES NOT EXIST"));
     }
 
-    // cant accept request sent by self
-    if (user._id.toString() !== request.destinator.toString())
-      return next(ApiError.forbidden("cant accept own request"));
-
     //check if convo already exists
     const convo_indentifier = createConversationId(
-      user._id.toString(),
+      userId,
       request.requester.toString()
     );
 
@@ -124,14 +131,6 @@ UserController.post(
       });
       return next(ApiError.badRequest("contact already in contact list"));
     }
-    const contact = await UserModel.findById(request.requester.toString());
-
-    if (!contact) {
-      RequestModel.deleteOne({
-        _id: postedId,
-      });
-      return next(ApiError.forbidden("requester does not exist"));
-    }
 
     await RequestModel.deleteOne({
       _id: postedId,
@@ -139,10 +138,10 @@ UserController.post(
 
     const newConvo = await ConversationModel.create({
       identifier: convo_indentifier,
-      users: [user._id, contact._id],
-      admins: [user._id, contact._id],
+      users: [userId, requester._id],
+      admins: [userId, requester._id],
     });
-    res.status(200).json(newConvo);
+    res.status(200).json({ ...newConvo._doc, user: requester });
   })
 );
 
@@ -166,6 +165,7 @@ UserController.delete("/user-contact/:id", async (req, res, next) => {
   return res.sendStatus(204);
 });
 
+// blacklist a user
 UserController.put("/blackList/:id", async (req, res, next) => {
   const blackListedUserId = req.params.id;
   const userId = req.userInfo._id;
@@ -185,7 +185,7 @@ UserController.put("/blackList/:id", async (req, res, next) => {
   await user.save();
 });
 
-// block user
+// blocka a user
 UserController.put("/blockUser", async (req, res, next) => {
   const { userId: blockedUserId, conversationId } = req.body;
   const userId = req.userInfo._id;
@@ -211,7 +211,7 @@ UserController.put("/blockUser", async (req, res, next) => {
   return res.sendStatus(200);
 });
 
-// unblock user
+// unblock a user
 UserController.put("/unblockUser", async (req, res, next) => {
   const { userId: blockedUserId, conversationId } = req.body;
   const userId = req.userInfo._id;
@@ -239,6 +239,7 @@ UserController.put("/unblockUser", async (req, res, next) => {
   return res.sendStatus(200);
 });
 
+// get all requests
 UserController.get(
   "/request",
   ErrorCatcher(async (req, res, next) => {
@@ -288,6 +289,7 @@ UserController.get(
   })
 );
 
+// post new request
 UserController.post(
   "/request",
   ErrorCatcher(async (req, res, next) => {
@@ -358,6 +360,7 @@ UserController.post(
   })
 );
 
+// delete/cancel request
 UserController.delete(
   "/request/:requestId",
   ErrorCatcher(async (req, res, next) => {
@@ -449,6 +452,7 @@ UserController.get(
   })
 );
 
+// get profile info
 UserController.get(
   "/profile",
   ErrorCatcher(async (req, res, next) => {
@@ -468,6 +472,8 @@ UserController.get(
     res.status(200).json(profile[0]);
   })
 );
+
+// get profile info of a user
 UserController.get(
   "/profile/:id",
   ErrorCatcher(async (req, res, next) => {
@@ -546,6 +552,7 @@ UserController.get(
   })
 );
 
+// change profile info
 UserController.put(
   "/profile",
   ErrorCatcher(async (req, res, next) => {
@@ -561,6 +568,7 @@ UserController.put(
   })
 );
 
+// change profile picture
 UserController.put(
   "/profile/picture",
   fileUpload({

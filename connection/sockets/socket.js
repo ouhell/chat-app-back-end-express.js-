@@ -18,8 +18,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("cancel request", (request) => {
-    socket.in(request.destinator).emit("canceled request", request._id);
-    socket.in(request.requester).emit("canceled request", request._id);
+    socket.in(request.destinator._id).emit("canceled request", request._id);
+    socket.in(request.requester._id).emit("canceled request", request._id);
   });
   socket.on("chat", (conversation) => {
     socket.join(conversation);
