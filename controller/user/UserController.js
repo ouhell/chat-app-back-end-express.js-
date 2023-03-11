@@ -169,10 +169,10 @@ UserController.delete("/user-contact/:id", async (req, res, next) => {
 UserController.put("/blackList/:id", async (req, res, next) => {
   const blackListedUserId = req.params.id;
   const userId = req.userInfo._id;
-  if (!mongoose.Types.ObjectId.isValid(blackListedUser))
+  if (!mongoose.Types.ObjectId.isValid(blackListedUserId))
     return next(ApiError.badRequest("invalid target user id"));
   const user = await UserModel.findById(userId);
-  const convo_indentifier = createConversationId(userId, contactId);
+  const convo_indentifier = createConversationId(userId, blackListedUserId);
   const conversation = await ConversationModel.exists({
     identifier: convo_indentifier,
   });
@@ -183,13 +183,14 @@ UserController.put("/blackList/:id", async (req, res, next) => {
   }
   user.black_listed_users.push(new mongoose.Types.ObjectId(blackListedUserId));
   await user.save();
+  return res.sendStatus(200);
 });
 
 // blocka a user
 UserController.put("/blockUser", async (req, res, next) => {
-  const { userId: blockedUserId, conversationId } = req.body;
+  const { blockedUserId, conversationId } = req.body;
   const userId = req.userInfo._id;
-  const convo_indentifier = createConversationId(userId, contactId);
+  const convo_indentifier = createConversationId(userId, blockedUserId);
 
   if (!mongoose.Types.ObjectId.isValid(conversationId))
     return next(ApiError.badRequest("invalid conversation id"));
@@ -197,25 +198,27 @@ UserController.put("/blockUser", async (req, res, next) => {
     return next(ApiError.badRequest("invalid target user id"));
 
   const conversation = await ConversationModel.findOne({
-    _id: convo_indentifier,
+    identifier: convo_indentifier,
   });
   if (!conversation) return next(ApiError.notFound("conversation not found"));
   if (!conversation.admins.find((user) => user._id.toString() === userId))
-    return next(ApiError.forbidden());
+    return next(ApiError.forbidden("not an admin"));
   if (
     conversation.blocked.find((user) => user._id.toString() === blockedUserId)
   )
     return next(ApiError.forbidden("user already blocked"));
+
   conversation.blocked.push(new mongoose.Types.ObjectId(blockedUserId));
+
   await conversation.save();
   return res.sendStatus(200);
 });
 
 // unblock a user
 UserController.put("/unblockUser", async (req, res, next) => {
-  const { userId: blockedUserId, conversationId } = req.body;
+  const { blockedUserId, conversationId } = req.body;
   const userId = req.userInfo._id;
-  const convo_indentifier = createConversationId(userId, contactId);
+  const convo_indentifier = createConversationId(userId, blockedUserId);
 
   if (!mongoose.Types.ObjectId.isValid(conversationId))
     return next(ApiError.badRequest("invalid conversation id"));
@@ -223,14 +226,14 @@ UserController.put("/unblockUser", async (req, res, next) => {
     return next(ApiError.badRequest("invalid target user id"));
 
   const conversation = await ConversationModel.findOne({
-    _id: convo_indentifier,
+    identifier: convo_indentifier,
   });
+  console.log(conversation);
+  console.log(blockedUserId);
   if (!conversation) return next(ApiError.notFound("conversation not found"));
-  if (!conversation.admins.find((user) => user._id.toString() === userId))
+  if (!conversation.admins.find((user) => user.toString() === userId))
     return next(ApiError.forbidden());
-  if (
-    conversation.blocked.find((user) => user._id.toString() === blockedUserId)
-  )
+  if (!conversation.blocked.find((user) => user.toString() === blockedUserId))
     return next(ApiError.forbidden("user not blocked"));
   conversation.blocked = conversation.blocked.filter(
     (user) => user._id.toString() !== blockedUserId

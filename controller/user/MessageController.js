@@ -108,18 +108,16 @@ MessageController.post(
     )
       return next(ApiError.badRequest("invalid message"));
     // find if conversation exists and not blocked
-    const conversation = await ConversationModel.exists({
-      _id: conversation_id,
-      users: user_id,
-      blocked: { $ne: user_id },
-    });
-    if (!conversation) {
-      const conv = await ConversationModel.exists({
-        _id: conversation_id,
-        users: user_id,
-      });
-      if (conv) return next(ApiError.forbidden("blocked"));
-      return next(ApiError.notFound("can't find coversation"));
+    const conversation = await ConversationModel.findById(conversation_id);
+
+    if (!conversation) return next(ApiError.notFound("can't find coversation"));
+
+    if (conversation.identifier !== "public") {
+      if (conversation.blocked.find((user) => user._id.toString() === user_id))
+        return next(ApiError.forbidden("blocked"));
+
+      if (!conversation.users.find((user) => user._id.toString() === user_id))
+        return next(ApiError.forbidden("not a part of the conversation"));
     }
 
     const createdMessage = await MessageModel.create({
@@ -129,7 +127,7 @@ MessageController.post(
       content_type: "text",
     });
 
-    res.status(201).json(createdMessage);
+    return res.status(201).json(createdMessage);
   })
 );
 
@@ -163,18 +161,16 @@ MessageController.post(
     };
 
     // find if conversation exists and not blocked
-    const conversation = await ConversationModel.exists({
-      _id: conversation_id,
-      users: user_id,
-      blocked: { $ne: user_id },
-    });
-    if (!conversation) {
-      const conv = await ConversationModel.exists({
-        _id: conversation_id,
-        users: user_id,
-      });
-      if (conv) return next(ApiError.forbidden("blocked"));
-      return next(ApiError.notFound("can't find conversation"));
+    const conversation = await ConversationModel.findById(conversation_id);
+
+    if (!conversation) return next(ApiError.notFound("can't find coversation"));
+
+    if (conversation.identifier !== "public") {
+      if (conversation.blocked.find((user) => user._id.toString() === user_id))
+        return next(ApiError.forbidden("blocked"));
+
+      if (!conversation.users.find((user) => user._id.toString() === user_id))
+        return next(ApiError.forbidden("not a part of the conversation"));
     }
 
     const fileRef = ref(storage, "images/" + v4());
@@ -234,19 +230,16 @@ MessageController.post(
       },
     };
 
-    // find if conversation exists and not blocked
-    const conversation = await ConversationModel.exists({
-      _id: conversation_id,
-      users: user_id,
-      blocked: { $ne: user_id },
-    });
-    if (!conversation) {
-      const conv = await ConversationModel.exists({
-        _id: conversation_id,
-        users: user_id,
-      });
-      if (conv) return next(ApiError.forbidden("blocked"));
-      return next(ApiError.notFound("can't find conversation"));
+    const conversation = await ConversationModel.findById(conversation_id);
+
+    if (!conversation) return next(ApiError.notFound("can't find coversation"));
+
+    if (conversation.identifier !== "public") {
+      if (conversation.blocked.find((user) => user._id.toString() === user_id))
+        return next(ApiError.forbidden("blocked"));
+
+      if (!conversation.users.find((user) => user._id.toString() === user_id))
+        return next(ApiError.forbidden("not a part of the conversation"));
     }
 
     const fileRef = ref(
