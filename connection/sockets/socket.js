@@ -25,7 +25,7 @@ io.on("connection", (socket) => {
     socket.join(conversation);
   });
   socket.on("send message", (message) => {
-    // console.log("message broadcasted :", message.message);
+    console.log("message broadcasted :", message.message);
     socket.in(message.conversation).emit("receive message", message);
   });
   socket.on("delete message", (message) => {
