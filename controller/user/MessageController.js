@@ -48,9 +48,10 @@ MessageController.get(
     const conversation = await ConversationModel.findById(conversation_id);
 
     if (!conversation) return next(ApiError.notFound("can't find coversation"));
-
-    if (!conversation.users.find((user) => user._id.toString() === userId))
-      return next(ApiError.forbidden("invalid contact"));
+    if (conversation.identifier !== "public") {
+      if (!conversation.users.find((user) => user._id.toString() === userId))
+        return next(ApiError.forbidden("not a part of the conversation"));
+    }
 
     const messages = await MessageModel.aggregate([
       {
