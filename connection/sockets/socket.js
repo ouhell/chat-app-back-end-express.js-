@@ -33,6 +33,7 @@ io.on("connection", (socket) => {
     socket.in(message.conversation).emit("receive message", message);
   });
   socket.on("delete message", (message) => {
+    console.log("deleting message", message);
     socket.in(message.conversation).emit("remove message", message);
   });
   socket.on("notify request", (request) => {
