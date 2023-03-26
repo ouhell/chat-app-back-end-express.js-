@@ -23,7 +23,9 @@ const ErrorCatcher = (handlerFunction) => {
         });
         content = errors;
       }
-      next(new ApiError(500, content).setValidation(true));
+      next(
+        new ApiError(500, content).setValidation(err.name === "ValidationError")
+      );
     }
   };
 };

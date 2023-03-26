@@ -29,11 +29,9 @@ io.on("connection", (socket) => {
     socket.join(conversation);
   });
   socket.on("send message", (message) => {
-    console.log("message broadcasted :", message.message);
     socket.in(message.conversation).emit("receive message", message);
   });
   socket.on("delete message", (message) => {
-    console.log("deleting message", message);
     socket.in(message.conversation).emit("remove message", message);
   });
   socket.on("notify request", (request) => {

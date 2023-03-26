@@ -1,61 +1,8 @@
 require("dotenv").config();
 const express = require("express");
-const path = require("path");
-const app = require("./connection/app/app");
-const server = require("./connection/server/server");
 
-// SETUP PRE HANDLERS
-const {
-  AuthentificationHandler,
-  protectPath,
-  allowPath,
-  bindRole,
-} = require("./auth/AuthetificationHandler");
-/*
-  URL CORRECTOR  "remove last /"
- const UrlHandler = require("./handlers/UrlHandler");
-app.use(UrlHandler);
- */
-app.use(AuthentificationHandler);
-//
-
-// SETUP PROTECTED PATHS
-protectPath("/api/*");
-
-// SETUP ALLOWED PATHS (order is important)
-
-allowPath("/api/userapi/users", "post");
-allowPath("/api/auth/*");
-
-//
-
-// SETUP REQUIRED ROLES (order is important)
-
-//
-
-// SETUP ROUTERS
-const AuthentificationController = require("./auth/AuthentficationController");
-const UserController = require("./controller/user/UserController");
-const MessageController = require("./controller/user/MessageController");
-app.use("/api/auth", AuthentificationController);
-app.use("/api/userapi", UserController);
-app.use("/api/messagerie", MessageController);
-//
-
-//
-app.use(express.static(path.join(__dirname, "public")));
-
-// SETUP ERROR HANDLERS
-const ApiErrorHandler = require("./error/ApiErrorHandler");
-app.use(ApiErrorHandler);
-
-app.all("/api/*", (req, res) => {
-  res.status(404).send("CANNOT FIND END POINT : " + req.url);
-});
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+const app = require("./src/app/app");
+const server = require("./src/connection/server/server");
 
 /* app.all("*", (req, res) => {
   res.status(404).send("CANNOT FIND END POINT : " + req.url);
@@ -63,7 +10,7 @@ app.get("*", (req, res) => {
 
 //setupt socket
 
-const socketio = require("./connection/sockets/socket");
+const socketio = require("./src/connection/sockets/socket");
 
 // set up database connection
 
