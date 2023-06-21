@@ -31,7 +31,7 @@ exports.getPublicConversations = async (req, res, next) => {
 };
 
 exports.getContacts = async (req, res, next) => {
-  console.log(xeeee.lol);
+ 
   const conversations = await ConversationModel.aggregate([
     {
       $match: {

@@ -5,7 +5,7 @@ const ErrorCatcher = require("../error/ErrorCatcher");
 
 const router = express.Router();
 
-router.param("id", ErrorCatcher(validationController.validateId));
+router.param("id",validationController.validateId);
 
 //router.route("/:id").get(userController.getUserById);
 router.route("/contacts").get(ErrorCatcher(userController.getContacts));
