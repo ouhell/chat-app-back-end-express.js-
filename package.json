@@ -17,8 +17,9 @@
     "uuid": "^9.0.0"
   },
   "scripts": {
-    "start": "SET NODE_ENV=production&node  main.js",
+    "start": "SET NODE_ENV=production& yarn build &node  ./dist/main.js",
     "dev": "SET NODE_ENV=developement&nodemon  main.js",
+    "build": "tsc",
     "debug": "SET NODE_ENV=developement & ndb main.js",
     "check": "tsc --noEmit"
   },

@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 import { Express } from "express";
-import app from "./src/app/app";
-import server from "./src/connection/server/server";
+import app from "./app/app";
+import server from "./connection/server/server";
 import mongoose from "mongoose";
 
 /* app.all("*", (req, res) => {
@@ -11,11 +11,11 @@ import mongoose from "mongoose";
 
 //setupt socket
 
-const socketio = require("./src/connection/sockets/socket");
+import io from "./connection/sockets/sockets";
+
+console.log(io._connectTimeout);
 
 // set up database connection
-
-connectToDatabase(app); // it all start
 
 function connectToDatabase(app: Express) {
   const URI = process.env.DATABASE_CONNECTION_URI as string;
@@ -43,3 +43,5 @@ function startServer(app: Express) {
     console.log(`SERVER STARTED AT PORT ${PORT} ::`);
   });
 }
+
+connectToDatabase(app); // it all start

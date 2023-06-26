@@ -5,6 +5,7 @@ import morgan from "morgan";
 import AuthenticationRouter from "../routes/authenticationRoutes";
 import UserRouter from "../routes/userRoutes";
 import MessageRouter from "../routes/messageRoutes";
+import ApiErrorHandler from "../error/ApiErrorHandler";
 
 const app = express();
 
@@ -19,19 +20,20 @@ app.use(cors());
 //
 
 // SETUP PRE HANDLERS
-const {
-  AuthentificationHandler,
+import {
+  AuthenticationHandler,
   protectPath,
   allowPath,
   bindRole,
-} = require("../auth/AuthetificationHandler");
+} from "../auth/AuthentificationHandler";
+
 /*
   URL CORRECTOR  "remove last /"
  const UrlHandler = require("./handlers/UrlHandler");
 app.use(UrlHandler);
  */
 
-app.use(AuthentificationHandler);
+app.use(AuthenticationHandler);
 //
 
 // SETUP PROTECTED PATHS
@@ -66,7 +68,6 @@ app.get("*", (req, res) => {
 });
 
 // SETUP ERROR HANDLERS
-const ApiErrorHandler = require("../error/ApiErrorHandler");
 
 app.use(ApiErrorHandler);
 
