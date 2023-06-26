@@ -2,9 +2,9 @@ import { NextFunction, Request, Response } from "express";
 import ApiError from "./ApiError";
 
 const ErrorCatcher = (
-  handlerFunction: (req: Request, res: Response, next: NextFunction) => void
+  handlerFunction: (req: any, res: any, next: NextFunction) => void
 ) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: any, res: any, next: NextFunction) => {
     try {
       await handlerFunction(req, res, next);
     } catch (err) {

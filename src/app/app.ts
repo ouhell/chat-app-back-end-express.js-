@@ -1,9 +1,10 @@
-import dotenv from "dotenv"
-import express from "express"
-import path from "path"
-import cors from "cors"
-import morgan from "morgan"
-
+import express from "express";
+import path from "path";
+import cors from "cors";
+import morgan from "morgan";
+import AuthenticationRouter from "../routes/authenticationRoutes";
+import UserRouter from "../routes/userRoutes";
+import MessageRouter from "../routes/messageRoutes";
 
 const app = express();
 
@@ -47,12 +48,10 @@ allowPath("/api/auth/*");
 //
 
 // SETUP ROUTERS
-const authRouter = require("../routes/authenticationRoutes");
-const userRouter = require("../routes/userRoutes");
-const messageRouter = require("../routes/messageRoutes");
-app.use("/api/auth", authRouter);
-app.use("/api/users", userRouter);
-app.use("/api/messages", messageRouter);
+
+app.use("/api/auth", AuthenticationRouter);
+app.use("/api/users", UserRouter);
+app.use("/api/messages", MessageRouter);
 //
 
 //

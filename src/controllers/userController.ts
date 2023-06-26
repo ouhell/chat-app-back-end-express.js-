@@ -18,7 +18,7 @@ const {
   getDownloadURL,
 } = require("firebase/storage");
 
-exports.getUserById = async (
+export const getUserById = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -28,7 +28,7 @@ exports.getUserById = async (
   res.status(200).json();
 };
 
-exports.getPublicConversations = async (
+export const getPublicConversations = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -39,7 +39,7 @@ exports.getPublicConversations = async (
   return res.status(200).json(publicConversations);
 };
 
-exports.getContacts = async (
+export const getContacts = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -87,7 +87,7 @@ exports.getContacts = async (
   return res.status(200).json(conversations);
 };
 
-exports.addContact = async (
+export const addContact = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -150,7 +150,7 @@ exports.addContact = async (
   res.status(200).json({ ...newConvo, user: requester });
 };
 
-exports.deleteContact = async (
+export const deleteContact = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -173,7 +173,7 @@ exports.deleteContact = async (
   return res.sendStatus(204);
 };
 
-exports.blacklistUser = async (
+export const blacklistUser = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -201,7 +201,7 @@ exports.blacklistUser = async (
   return res.sendStatus(200);
 };
 
-exports.blockContact = async (
+export const blockContact = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -227,7 +227,7 @@ exports.blockContact = async (
   return res.sendStatus(200);
 };
 
-exports.unblockContact = async (
+export const unblockContact = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -252,7 +252,7 @@ exports.unblockContact = async (
   return res.sendStatus(200);
 };
 
-exports.getContactRequests = async (
+export const getContactRequests = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -301,7 +301,7 @@ exports.getContactRequests = async (
   ]);
   return res.status(200).json(requests);
 };
-exports.addContactRequest = async (
+export const addContactRequest = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -369,7 +369,7 @@ exports.addContactRequest = async (
   ]);
   return res.status(201).json(appendedRequest[0]);
 };
-exports.deleteContactRequest = async (
+export const deleteContactRequest = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -392,7 +392,7 @@ exports.deleteContactRequest = async (
 
   return res.status(200).json(request);
 };
-exports.getContactCandidates = async (
+export const getContactCandidates = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -468,7 +468,7 @@ exports.getContactCandidates = async (
 
   return res.status(200).json(candidates);
 };
-exports.getSelfProfile = async (
+export const getSelfProfile = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -488,7 +488,7 @@ exports.getSelfProfile = async (
 
   res.status(200).json(profile[0]);
 };
-exports.getUserProfile = async (
+export const getUserProfile = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -511,7 +511,7 @@ exports.getUserProfile = async (
 
   res.status(200).json(profile[0]);
 };
-exports.getContactProfileByConversationId = async (
+export const getContactProfileByConversationId = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -564,7 +564,7 @@ exports.getContactProfileByConversationId = async (
   res.status(200).json(profile[0]);
 };
 
-exports.updateProfile = async (
+export const updateProfile = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -582,7 +582,7 @@ exports.updateProfile = async (
   const savedUser = await user.save();
   res.status(200).json(savedUser);
 };
-exports.updateProfilePicture = async (
+export const updateProfilePicture = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -604,7 +604,7 @@ exports.updateProfilePicture = async (
     newUrl: url,
   });
 };
-exports.profilePictureFileCatch = fileUpload({
+export const profilePictureFileCatch = fileUpload({
   limits: { fileSize: 1024 * 1024 * 3 },
   limitHandler: (req, res, next) => {
     return next(ApiError.badRequest("image surpass the size limit of 3mb"));

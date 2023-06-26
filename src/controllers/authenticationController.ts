@@ -5,7 +5,11 @@ import ApiError from "../error/ApiError";
 import ErrorCatcher from "../error/ErrorCatcher";
 import EncryptionHandler from "../security/EncryptionHandler";
 
-exports.login = async (req: Request, res: Response, next: NextFunction) => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const identifier = req.body.identifier; // username or email
   const password = req.body.password;
   const user = await UserModel.findOne({
@@ -36,7 +40,11 @@ exports.login = async (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
-exports.signup = async (req: Request, res: Response, next: NextFunction) => {
+export const signup = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   let { username, personal_name, password, email } = req.body;
   password = EncryptionHandler.encrypt(password);
   const user = new UserModel({ username, personal_name, password, email });
@@ -46,7 +54,7 @@ exports.signup = async (req: Request, res: Response, next: NextFunction) => {
   return res.status(201).json(createdUser);
 };
 
-exports.checkEmailExistance = async (
+export const checkEmailExistance = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -60,7 +68,7 @@ exports.checkEmailExistance = async (
   return res.status(200).json(false);
 };
 
-exports.checkUsernameExistance = async (
+export const checkUsernameExistance = async (
   req: Request,
   res: Response,
   next: NextFunction

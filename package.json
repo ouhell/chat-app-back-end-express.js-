@@ -19,7 +19,8 @@
   "scripts": {
     "start": "SET NODE_ENV=production&node  main.js",
     "dev": "SET NODE_ENV=developement&nodemon  main.js",
-    "debug": "SET NODE_ENV=developement & ndb main.js"
+    "debug": "SET NODE_ENV=developement & ndb main.js",
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",

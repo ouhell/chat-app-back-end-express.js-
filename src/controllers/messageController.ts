@@ -17,7 +17,7 @@ const {
 } = require("firebase/storage");
 const { v4 } = require("uuid");
 
-exports.getConversationMessages = async (
+export const getConversationMessages = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -71,7 +71,7 @@ exports.getConversationMessages = async (
   res.status(200).json({ conversation, messages });
 };
 
-exports.deleteMessage = async (
+export const deleteMessage = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -90,7 +90,7 @@ exports.deleteMessage = async (
   return res.sendStatus(202);
 };
 
-exports.addTextMessage = async (
+export const addTextMessage = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -126,7 +126,7 @@ exports.addTextMessage = async (
 
   return res.status(201).json(createdMessage);
 };
-exports.addImageMessage = async (
+export const addImageMessage = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -182,7 +182,7 @@ exports.addImageMessage = async (
     next(ApiError.internal("couldnt send message"));
   }
 };
-exports.imageMessageFileCatch = fileupload({
+export const imageMessageFileCatch = fileupload({
   createParentPath: true,
   limits: { fileSize: 1024 * 1024 },
   limitHandler: async (req, res, next) => {
@@ -191,7 +191,7 @@ exports.imageMessageFileCatch = fileupload({
     );
   },
 });
-exports.addVoiceMessage = async (
+export const addVoiceMessage = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -249,7 +249,7 @@ exports.addVoiceMessage = async (
     next(ApiError.internal("couldnt send message"));
   }
 };
-exports.voiceMessageFileCatch = fileupload({
+export const voiceMessageFileCatch = fileupload({
   createParentPath: true,
   limits: { fileSize: 1024 * 1024 * 5 },
   limitHandler: async (req, res, next) => {
