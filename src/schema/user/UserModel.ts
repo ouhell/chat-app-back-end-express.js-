@@ -1,16 +1,5 @@
 import { Schema, model, Types } from "mongoose";
-
-interface User {
-  username: string;
-  personal_name: string;
-  email: string;
-  password: string;
-  black_listed_users: Array<Types.ObjectId>;
-  groups: Array<Types.ObjectId>;
-  isEnabled: boolean;
-  profile_picture: string;
-  role: string;
-}
+import { User } from "../../types/schemas";
 
 const UserSchema = new Schema<User>({
   username: { type: String, required: true, unique: true },

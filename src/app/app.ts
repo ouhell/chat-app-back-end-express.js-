@@ -24,7 +24,6 @@ import {
   AuthenticationHandler,
   protectPath,
   allowPath,
-  bindRole,
 } from "../auth/AuthentificationHandler";
 
 /*
@@ -63,7 +62,7 @@ app.all("/api/*", (req, res) => {
   res.status(404).send("CANNOT FIND END POINT : " + req.url);
 });
 
-app.get("*", (req, res) => {
+app.get("*", (_, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 

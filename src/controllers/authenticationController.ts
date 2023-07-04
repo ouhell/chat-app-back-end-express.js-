@@ -2,7 +2,6 @@ import { Response, Request, NextFunction } from "express";
 import UserModel from "../schema/user/UserModel";
 import jwt from "jsonwebtoken";
 import ApiError from "../error/ApiError";
-import ErrorCatcher from "../error/ErrorCatcher";
 import EncryptionHandler from "../security/EncryptionHandler";
 
 export const login = async (

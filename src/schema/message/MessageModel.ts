@@ -1,15 +1,5 @@
 import { Schema, Types, model } from "mongoose";
-
-interface Message {
-  sender: typeof Types.ObjectId;
-  conversation: typeof Types.ObjectId;
-  sent_date: Date;
-  edited_date: Date | undefined;
-  message: string;
-  content: string;
-  content_type: string;
-  hidden: boolean;
-}
+import { Message } from "../../types/schemas";
 
 const MessageSchema = new Schema<Message>({
   sender: { type: Types.ObjectId, required: true, immutable: true },

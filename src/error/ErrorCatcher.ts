@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction } from "express";
 import ApiError from "./ApiError";
 
 const ErrorCatcher = (

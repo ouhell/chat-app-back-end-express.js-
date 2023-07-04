@@ -23,7 +23,7 @@ function connectToDatabase(app: Express) {
     .connect(URI)
     .then(() => {
       console.log("MONGODB CONNECTED ::");
-      startServer(app);
+      startServer();
     })
     .catch((err) => {
       console.log(
@@ -37,7 +37,7 @@ function connectToDatabase(app: Express) {
     });
 }
 
-function startServer(app: Express) {
+function startServer() {
   const PORT = process.env.PORT;
   server.listen(PORT, () => {
     console.log(`SERVER STARTED AT PORT ${PORT} ::`);

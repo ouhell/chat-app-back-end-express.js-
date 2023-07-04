@@ -1,11 +1,5 @@
 import { Schema, Types, model } from "mongoose";
-
-interface Request {
-  requester: typeof Types.ObjectId;
-  destinator: typeof Types.ObjectId;
-  date: Date;
-}
-
+import { Request } from "../../types/schemas";
 const RequestSchema = new Schema<Request>({
   requester: { type: Types.ObjectId, required: true },
   destinator: { type: Types.ObjectId, required: true },

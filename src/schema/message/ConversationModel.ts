@@ -1,15 +1,5 @@
 import { Schema, model, Types } from "mongoose";
-
-interface Conversation {
-  identifier: string;
-  users: Array<Types.ObjectId>;
-  blocked: Array<Types.ObjectId>;
-  blackList: Array<Types.ObjectId>;
-  lockedInvite: boolean;
-  admins: Array<Types.ObjectId>;
-  creation_date: Date;
-  name: string;
-}
+import { Conversation } from "../../types/schemas";
 
 const ConversationSchema = new Schema<Conversation>({
   identifier: { type: String, required: true },

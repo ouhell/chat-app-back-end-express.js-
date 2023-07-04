@@ -13,7 +13,6 @@ import {
   getContactProfileByConversationId,
   getContactRequests,
   getSelfProfile,
-  getUserById,
   getUserProfile,
   profilePictureFileCatch,
   updateProfile,
