@@ -1,12 +1,14 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const MessageModel = require("../schema/message/MessageModel");
-const ConversationModel = require("../schema/message/ConversationModel");
-const UserModel = require("../schema/user/UserModel");
-const ApiError = require("../error/ApiError");
+import express, { NextFunction, Request, Response } from "express";
+import mongoose from "mongoose";
+import MessageModel from "../schema/message/MessageModel";
+import ConversationModel from "../schema/message/ConversationModel";
+import UserModel from "../schema/user/UserModel";
+import ApiError from "../error/ApiError";
 //const ErrorCatcher = require("../error/ErrorCatcher");
-const fileupload = require("express-fileupload");
-const { storage } = require("../firebase/config");
+import fileupload from "express-fileupload";
+import { storage } from "../firebase/config";
+import { AuthRequest } from "../types/AuthRequest";
+import fileUpload from "express-fileupload";
 const {
   ref,
   uploadBytes,
@@ -15,7 +17,11 @@ const {
 } = require("firebase/storage");
 const { v4 } = require("uuid");
 
-exports.getConversationMessages = async (req, res, next) => {
+export const getConversationMessages = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const conversation_id = req.params.id;
 
   const userId = req.userInfo._id;
@@ -23,7 +29,7 @@ exports.getConversationMessages = async (req, res, next) => {
 
   if (!conversation) return next(ApiError.notFound("can't find coversation"));
   if (conversation.identifier !== "public") {
-    if (!conversation.users.find((user) => user._id.toString() === userId))
+    if (!conversation.users.find((user) => user.toString() === userId))
       return next(ApiError.forbidden("not a part of the conversation"));
   }
 
@@ -65,11 +71,15 @@ exports.getConversationMessages = async (req, res, next) => {
   res.status(200).json({ conversation, messages });
 };
 
-exports.deleteMessage = async (req, res, next) => {
+export const deleteMessage = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   let message_id = req.params.id;
   const userId = req.userInfo._id;
 
-  message_id = new mongoose.Types.ObjectId(message_id.toString());
+  message_id = new mongoose.Types.ObjectId(message_id.toString()).toString();
   const message = await MessageModel.findById(message_id);
   if (!message) return next(ApiError.notFound("message does not exist"));
   if (message.sender.toString() !== userId)
@@ -80,7 +90,11 @@ exports.deleteMessage = async (req, res, next) => {
   return res.sendStatus(202);
 };
 
-exports.addTextMessage = async (req, res, next) => {
+export const addTextMessage = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const conversation_id = req.params.id;
   const user_id = req.userInfo._id;
   const message = req.body.message;
@@ -96,10 +110,10 @@ exports.addTextMessage = async (req, res, next) => {
   if (!conversation) return next(ApiError.notFound("can't find coversation"));
 
   if (conversation.identifier !== "public") {
-    if (conversation.blocked.find((user) => user._id.toString() === user_id))
+    if (conversation.blocked.find((user) => user.toString() === user_id))
       return next(ApiError.forbidden("blocked"));
 
-    if (!conversation.users.find((user) => user._id.toString() === user_id))
+    if (!conversation.users.find((user) => user.toString() === user_id))
       return next(ApiError.forbidden("not a part of the conversation"));
   }
 
@@ -112,14 +126,18 @@ exports.addTextMessage = async (req, res, next) => {
 
   return res.status(201).json(createdMessage);
 };
-exports.addImageMessage = async (req, res, next) => {
+export const addImageMessage = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const conversation_id = req.params.id;
 
   const user_id = req.userInfo._id;
   const acceptedImageTypes = ["image/gif", "image/jpeg", "image/png"];
 
   if (!req.files) return next(ApiError.badRequest("no file"));
-  const file = req.files.file;
+  const file = req.files.file as fileUpload.UploadedFile;
   if (!file) return next(ApiError.badRequest("no file"));
 
   if (!acceptedImageTypes.includes(file.mimetype))
@@ -135,10 +153,10 @@ exports.addImageMessage = async (req, res, next) => {
   if (!conversation) return next(ApiError.notFound("can't find coversation"));
 
   if (conversation.identifier !== "public") {
-    if (conversation.blocked.find((user) => user._id.toString() === user_id))
+    if (conversation.blocked.find((user) => user.toString() === user_id))
       return next(ApiError.forbidden("blocked"));
 
-    if (!conversation.users.find((user) => user._id.toString() === user_id))
+    if (!conversation.users.find((user) => user.toString() === user_id))
       return next(ApiError.forbidden("not a part of the conversation"));
   }
 
@@ -164,7 +182,7 @@ exports.addImageMessage = async (req, res, next) => {
     next(ApiError.internal("couldnt send message"));
   }
 };
-exports.imageMessageFileCatch = fileupload({
+export const imageMessageFileCatch = fileupload({
   createParentPath: true,
   limits: { fileSize: 1024 * 1024 },
   limitHandler: async (req, res, next) => {
@@ -173,14 +191,18 @@ exports.imageMessageFileCatch = fileupload({
     );
   },
 });
-exports.addVoiceMessage = async (req, res, next) => {
+export const addVoiceMessage = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const conversation_id = req.params.id;
   const user_id = req.userInfo._id;
   const { duration } = req.body;
   const acceptedAudioTypes = ["audio/mp3", "audio/webm"];
 
   if (!req.files) return next(ApiError.badRequest("no file"));
-  const file = req.files.voice;
+  const file = req.files.voice as fileUpload.UploadedFile;
   if (!file) return next(ApiError.badRequest("no file"));
 
   if (!acceptedAudioTypes.includes(file.mimetype))
@@ -198,10 +220,10 @@ exports.addVoiceMessage = async (req, res, next) => {
   if (!conversation) return next(ApiError.notFound("can't find coversation"));
 
   if (conversation.identifier !== "public") {
-    if (conversation.blocked.find((user) => user._id.toString() === user_id))
+    if (conversation.blocked.find((user) => user.toString() === user_id))
       return next(ApiError.forbidden("blocked"));
 
-    if (!conversation.users.find((user) => user._id.toString() === user_id))
+    if (!conversation.users.find((user) => user.toString() === user_id))
       return next(ApiError.forbidden("not a part of the conversation"));
   }
 
@@ -211,7 +233,7 @@ exports.addVoiceMessage = async (req, res, next) => {
 
   await uploadBytes(fileRef, file.data, metadata);
 
-  url = await getDownloadURL(fileRef);
+  const url = await getDownloadURL(fileRef);
 
   try {
     const createdMessage = await MessageModel.create({
@@ -227,7 +249,7 @@ exports.addVoiceMessage = async (req, res, next) => {
     next(ApiError.internal("couldnt send message"));
   }
 };
-exports.voiceMessageFileCatch = fileupload({
+export const voiceMessageFileCatch = fileupload({
   createParentPath: true,
   limits: { fileSize: 1024 * 1024 * 5 },
   limitHandler: async (req, res, next) => {

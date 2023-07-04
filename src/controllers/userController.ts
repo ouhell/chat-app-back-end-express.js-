@@ -1,37 +1,49 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const UserModel = require("../schema/user/UserModel");
-const ConversationModel = require("../schema/message/ConversationModel");
-const RequestModel = require("../schema/request/RequestModel");
-const MessageModel = require("../schema/message/MessageModel");
-const ErrorCatcher = require("../error/ErrorCatcher");
-const ApiError = require("../error/ApiError");
+import { NextFunction, Response } from "express";
+import mongoose from "mongoose";
+import MessageModel from "../schema/message/MessageModel";
+import ConversationModel from "../schema/message/ConversationModel";
+import UserModel from "../schema/user/UserModel";
+import ApiError from "../error/ApiError";
+//const ErrorCatcher = require("../error/ErrorCatcher");
 
-const fileUpload = require("express-fileupload");
-const { storage } = require("../firebase/config");
+import RequestModel from "../schema/request/RequestModel";
+import { storage } from "../firebase/config";
+import { AuthRequest } from "../types/AuthRequest";
+import fileUpload from "express-fileupload";
+
 const {
   deleteObject,
   ref,
   uploadBytes,
   getDownloadURL,
 } = require("firebase/storage");
-const { async } = require("@firebase/util");
 
-exports.getUserById = async (req, res) => {
+export const getUserById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const user = await UserModel.findById(req.params.id);
   if (!user) return ApiError.notFound("user does not exist");
   res.status(200).json();
 };
 
-exports.getPublicConversations = async (req, res, next) => {
+export const getPublicConversations = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const publicConversations = await ConversationModel.find({
     identifier: "public",
   });
   return res.status(200).json(publicConversations);
 };
 
-exports.getContacts = async (req, res, next) => {
- 
+export const getContacts = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const conversations = await ConversationModel.aggregate([
     {
       $match: {
@@ -75,7 +87,11 @@ exports.getContacts = async (req, res, next) => {
   return res.status(200).json(conversations);
 };
 
-exports.addContact = async (req, res, next) => {
+export const addContact = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const postedId = req.params.id;
   const userId = req.userInfo._id;
 
@@ -131,10 +147,14 @@ exports.addContact = async (req, res, next) => {
     users: [userId, requester._id],
     admins: [userId, requester._id],
   });
-  res.status(200).json({ ...newConvo._doc, user: requester });
+  res.status(200).json({ ...newConvo, user: requester });
 };
 
-exports.deleteContact = async (req, res, next) => {
+export const deleteContact = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const contactId = req.params.id;
   const userId = req.userInfo._id;
 
@@ -153,7 +173,11 @@ exports.deleteContact = async (req, res, next) => {
   return res.sendStatus(204);
 };
 
-exports.blacklistUser = async (req, res, next) => {
+export const blacklistUser = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const blackListedUserId = req.params.id;
   const userId = req.userInfo._id;
 
@@ -163,16 +187,25 @@ exports.blacklistUser = async (req, res, next) => {
     identifier: convo_indentifier,
   });
 
+  if (!user) {
+    return next(new ApiError(404, "user not found"));
+  }
+
   if (conversation) {
     await ConversationModel.deleteOne({ _id: conversation._id });
     MessageModel.deleteMany({ conversation: conversation._id });
   }
-  user.black_listed_users.push(new mongoose.Types.ObjectId(blackListedUserId));
+  const blockedObjectId = new mongoose.Types.ObjectId(blackListedUserId);
+  user.black_listed_users.push(blockedObjectId);
   await user.save();
   return res.sendStatus(200);
 };
 
-exports.blockContact = async (req, res, next) => {
+export const blockContact = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const blockedUserId = req.params.id;
   const userId = req.userInfo._id;
   const convo_indentifier = createConversationId(userId, blockedUserId);
@@ -194,7 +227,11 @@ exports.blockContact = async (req, res, next) => {
   return res.sendStatus(200);
 };
 
-exports.unblockContact = async (req, res, next) => {
+export const unblockContact = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const blockedUserId = req.params.id;
   const userId = req.userInfo._id;
   const convo_indentifier = createConversationId(userId, blockedUserId);
@@ -205,7 +242,7 @@ exports.unblockContact = async (req, res, next) => {
 
   if (!conversation) return next(ApiError.notFound("conversation not found"));
   if (!conversation.admins.find((user) => user.toString() === userId))
-    return next(ApiError.forbidden());
+    return next(ApiError.forbidden("user is not admin"));
   if (!conversation.blocked.find((user) => user.toString() === blockedUserId))
     return next(ApiError.forbidden("user not blocked"));
   conversation.blocked = conversation.blocked.filter(
@@ -215,7 +252,11 @@ exports.unblockContact = async (req, res, next) => {
   return res.sendStatus(200);
 };
 
-exports.getContactRequests = async (req, res, next) => {
+export const getContactRequests = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   /* const requests = await RequestModel.find({
     $or: [{ requester: req.userInfo._id }, { destinator: req.userInfo._id }],
   }); */
@@ -260,7 +301,11 @@ exports.getContactRequests = async (req, res, next) => {
   ]);
   return res.status(200).json(requests);
 };
-exports.addContactRequest = async (req, res, next) => {
+export const addContactRequest = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const destinator = req.params.id;
   if (req.userInfo._id === destinator)
     return next(ApiError.badRequest("cant request from self"));
@@ -324,7 +369,11 @@ exports.addContactRequest = async (req, res, next) => {
   ]);
   return res.status(201).json(appendedRequest[0]);
 };
-exports.deleteContactRequest = async (req, res, next) => {
+export const deleteContactRequest = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const postedId = req.params.id;
 
   const request = await RequestModel.findById(postedId);
@@ -343,10 +392,17 @@ exports.deleteContactRequest = async (req, res, next) => {
 
   return res.status(200).json(request);
 };
-exports.getContactCandidates = async (req, res, next) => {
-  const searchtext = req.query.search;
+export const getContactCandidates = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const searchtext = req.query.search as string;
 
   const user = await UserModel.findById(req.userInfo._id);
+  if (!user) {
+    return next(ApiError.notFound("user not found"));
+  }
   const objectUserId = new mongoose.Types.ObjectId(req.userInfo._id);
 
   const requests = await RequestModel.find({
@@ -356,8 +412,8 @@ exports.getContactCandidates = async (req, res, next) => {
   // get all users that have a request with current user
   const requested = requests.map((request) => {
     return request.requester.toString() === req.userInfo._id
-      ? request.destinator
-      : request.requester;
+      ? new mongoose.Types.ObjectId(request.destinator.toString())
+      : new mongoose.Types.ObjectId(request.requester.toString());
   });
 
   const conversations = await ConversationModel.find({
@@ -365,16 +421,26 @@ exports.getContactCandidates = async (req, res, next) => {
   });
 
   // get all users in contact with current user
-  const contacts = conversations.map((convo) => {
-    let user = convo.users.find((user) => user.toString() !== req.userInfo._id);
-    return user;
-  });
+  const contacts = conversations.reduce(
+    (contacts: mongoose.Types.ObjectId[], convo) => {
+      return contacts.concat(
+        convo.users.filter(
+          (user) => user._id.toString() !== user._id.toString()
+        )
+      );
+    },
+    []
+  );
+  //   .map((convo) => {
+  //     let user = convo.users.find((user) => user.toString() !== req.userInfo._id);
+  //     return user;
+  //   });
 
-  filterList = contacts.concat(requested);
-  filterList.push(mongoose.Types.ObjectId(req.userInfo._id));
+  const filterList = contacts.concat(requested);
+  filterList.push(new mongoose.Types.ObjectId(req.userInfo._id));
   filterList.concat(user.black_listed_users);
 
-  const matchQuery = {
+  const matchQuery: any = {
     _id: { $not: { $in: filterList } },
     black_listed_users: { $ne: objectUserId },
   };
@@ -402,7 +468,11 @@ exports.getContactCandidates = async (req, res, next) => {
 
   return res.status(200).json(candidates);
 };
-exports.getSelfProfile = async (req, res, next) => {
+export const getSelfProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const objectUserId = new mongoose.Types.ObjectId(req.userInfo._id);
   const profile = await UserModel.aggregate([
     { $match: { _id: objectUserId } },
@@ -418,7 +488,11 @@ exports.getSelfProfile = async (req, res, next) => {
 
   res.status(200).json(profile[0]);
 };
-exports.getUserProfile = async (req, res, next) => {
+export const getUserProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const id = req.params.id;
 
   const objectId = new mongoose.Types.ObjectId(id);
@@ -437,7 +511,11 @@ exports.getUserProfile = async (req, res, next) => {
 
   res.status(200).json(profile[0]);
 };
-exports.getContactProfileByConversationId = async (req, res, next) => {
+export const getContactProfileByConversationId = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const conversationId = req.params.id;
 
   const objectId = new mongoose.Types.ObjectId(conversationId);
@@ -486,21 +564,33 @@ exports.getContactProfileByConversationId = async (req, res, next) => {
   res.status(200).json(profile[0]);
 };
 
-exports.updateProfile = async (req, res, next) => {
+export const updateProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { username, personal_name, email } = req.body;
   if (!(username && personal_name && email))
     return next(ApiError.badRequest("value not provided"));
   const user = await UserModel.findById(req.userInfo._id);
+  if (!user) {
+    return next(ApiError.notFound("user not found"));
+  }
   user.username = username;
   user.personal_name = personal_name;
   user.email = email;
   const savedUser = await user.save();
   res.status(200).json(savedUser);
 };
-exports.updateProfilePicture = async (req, res, next) => {
-  const image = req.files.profile_pic;
+export const updateProfilePicture = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.files) return next(ApiError.badRequest("no file"));
+  const image = req.files.profile_pic as fileUpload.UploadedFile;
   if (!image) return next(ApiError.badRequest("no image"));
-  imageRef = ref(storage, "profile/" + req.userInfo._id);
+  const imageRef = ref(storage, "profile/" + req.userInfo._id);
   const metadata = {
     contentType: image.mimetype,
   };
@@ -514,14 +604,14 @@ exports.updateProfilePicture = async (req, res, next) => {
     newUrl: url,
   });
 };
-exports.profilePictureFileCatch = fileUpload({
-  limits: 1024 * 1024 * 3,
+export const profilePictureFileCatch = fileUpload({
+  limits: { fileSize: 1024 * 1024 * 3 },
   limitHandler: (req, res, next) => {
     return next(ApiError.badRequest("image surpass the size limit of 3mb"));
   },
 });
 
-function createConversationId(id1, id2) {
+function createConversationId(id1: string, id2: string) {
   if (id1 > id2) {
     return id1 + id2;
   }

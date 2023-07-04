@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
+import { Schema, Types, model } from "mongoose";
+import { Message } from "../../types/schemas";
 
-const MessageSchema = mongoose.Schema({
-  sender: { type: mongoose.Types.ObjectId, required: true, immutable: true },
-
+const MessageSchema = new Schema<Message>({
+  sender: { type: Types.ObjectId, required: true, immutable: true },
   conversation: {
-    type: mongoose.Types.ObjectId,
+    type: Types.ObjectId,
     immutable: true,
     required: true,
   },
@@ -16,4 +16,4 @@ const MessageSchema = mongoose.Schema({
   hidden: { type: Boolean, default: false },
 });
 
-module.exports = mongoose.model("messages", MessageSchema);
+export default model("messages", MessageSchema);

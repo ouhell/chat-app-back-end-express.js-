@@ -1,11 +1,11 @@
-const server = require("../server/server");
-
-const { Server } = require("socket.io");
+import server from "../server/server";
+import { Server } from "socket.io";
 const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
-    transports: ["websocket", "polling"],
+    // transports: ["websocket", "polling"],
+
     credentials: true,
   },
   allowEIO3: true,
@@ -40,4 +40,4 @@ io.on("connection", (socket) => {
   socket;
 });
 
-module.exports = io;
+export default io;
