@@ -1,11 +1,15 @@
-const express = require("express");
-const UserModel = require("../schema/user/UserModel");
-const jwt = require("jsonwebtoken");
-const ApiError = require("../error/ApiError");
-const ErrorCatcher = require("../error/ErrorCatcher");
-const EncryptionHandler = require("../security/EncryptionHandler");
+import { Response, Request, NextFunction } from "express";
+import UserModel from "../schema/user/UserModel";
+import jwt from "jsonwebtoken";
+import ApiError from "../error/ApiError";
+import ErrorCatcher from "../error/ErrorCatcher";
+import EncryptionHandler from "../security/EncryptionHandler";
 
-exports.login = async (req, res, next) => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const identifier = req.body.identifier; // username or email
   const password = req.body.password;
   const user = await UserModel.findOne({
@@ -22,9 +26,9 @@ exports.login = async (req, res, next) => {
     return;
   }
 
-  access_token = jwt.sign(
+  const access_token = jwt.sign(
     { _id: user._id, role: user.role },
-    process.env.ACCESS_TOKEN_SECRET
+    process.env.ACCESS_TOKEN_SECRET as string
   );
 
   res.status(200).json({
@@ -36,7 +40,11 @@ exports.login = async (req, res, next) => {
   });
 };
 
-exports.signup = async (req, res, next) => {
+export const signup = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   let { username, personal_name, password, email } = req.body;
   password = EncryptionHandler.encrypt(password);
   const user = new UserModel({ username, personal_name, password, email });
@@ -46,7 +54,11 @@ exports.signup = async (req, res, next) => {
   return res.status(201).json(createdUser);
 };
 
-exports.checkEmailExistance = async (req, res, next) => {
+export const checkEmailExistance = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const checkEmail = req.params.value;
   const email = await UserModel.exists({
     email: checkEmail,
@@ -56,7 +68,11 @@ exports.checkEmailExistance = async (req, res, next) => {
   return res.status(200).json(false);
 };
 
-exports.checkUsernameExistance = async (req, res, next) => {
+export const checkUsernameExistance = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const checkUsername = req.params.value;
   const username = await UserModel.exists({
     username: checkUsername,

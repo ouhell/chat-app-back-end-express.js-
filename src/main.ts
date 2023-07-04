@@ -1,8 +1,9 @@
-require("dotenv").config();
-const express = require("express");
-
-const app = require("./src/app/app");
-const server = require("./src/connection/server/server");
+import dotenv from "dotenv";
+dotenv.config();
+import { Express } from "express";
+import app from "./app/app";
+import server from "./connection/server/server";
+import mongoose from "mongoose";
 
 /* app.all("*", (req, res) => {
   res.status(404).send("CANNOT FIND END POINT : " + req.url);
@@ -10,16 +11,14 @@ const server = require("./src/connection/server/server");
 
 //setupt socket
 
-const socketio = require("./src/connection/sockets/socket");
+import io from "./connection/sockets/sockets";
+
+console.log(io._connectTimeout);
 
 // set up database connection
 
-const mongoose = require("mongoose");
-
-connectToDatabase(app); // it all start
-
-function connectToDatabase(app) {
-  const URI = process.env.DATABASE_CONNECTION_URI;
+function connectToDatabase(app: Express) {
+  const URI = process.env.DATABASE_CONNECTION_URI as string;
   mongoose
     .connect(URI)
     .then(() => {
@@ -38,9 +37,11 @@ function connectToDatabase(app) {
     });
 }
 
-function startServer(app) {
+function startServer(app: Express) {
   const PORT = process.env.PORT;
   server.listen(PORT, () => {
     console.log(`SERVER STARTED AT PORT ${PORT} ::`);
   });
 }
+
+connectToDatabase(app); // it all start
