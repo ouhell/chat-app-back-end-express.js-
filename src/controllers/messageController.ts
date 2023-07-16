@@ -9,6 +9,9 @@ import fileupload from "express-fileupload";
 import { storage } from "../firebase/config";
 import { AuthRequest } from "../types/AuthRequest";
 import fileUpload from "express-fileupload";
+import { MessagesPayload } from "./responseTypes/messageResponses";
+import { Paginated } from "./responseTypes/pagination";
+import { Message } from "../types/schemas";
 const {
   ref,
   uploadBytes,
@@ -22,7 +25,10 @@ export const getConversationMessages = async (
   res: Response,
   next: NextFunction
 ) => {
+  const page_size = 30;
   const conversation_id = req.params.id;
+  const { skip } = req.query;
+  let offset: number = parseInt(skip as string) || 0;
 
   const userId = req.userInfo._id;
   const conversation = await ConversationModel.findById(conversation_id);
@@ -41,7 +47,8 @@ export const getConversationMessages = async (
       },
     },
     { $sort: { sent_date: -1 } },
-    { $limit: 30 },
+    { $skip: offset },
+    { $limit: page_size },
     {
       $lookup: {
         localField: "sender",
@@ -66,9 +73,27 @@ export const getConversationMessages = async (
       },
     },
   ]);
+
+  const count = await MessageModel.count({
+    conversation: new mongoose.Types.ObjectId(conversation_id),
+    hidden: false,
+  });
   messages.reverse();
 
-  res.status(200).json({ conversation, messages });
+  const currentPage = Math.floor(offset / page_size) + 1;
+  const totalPages = Math.ceil(count / page_size);
+
+  const paginatedMessages: Paginated<Message> = {
+    data: messages,
+    size: messages.length,
+    total_size: 0,
+    current_page: Math.floor(offset / page_size) + 1,
+    total_pages: Math.ceil(count / page_size),
+    isFirstPage: currentPage === 1,
+    isLastPage: currentPage === totalPages,
+  };
+
+  res.status(200).json({ conversation, messages: paginatedMessages });
 };
 
 export const deleteMessage = async (

@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import path from "path";
 import cors from "cors";
 import morgan from "morgan";
@@ -58,11 +58,11 @@ app.use("/api/messages", MessageRouter);
 //
 app.use(express.static(path.join(__dirname, "..", "public")));
 
-app.all("/api/*", (req, res) => {
+app.all("/api/*", (req: Request, res: Response) => {
   res.status(404).send("CANNOT FIND END POINT : " + req.url);
 });
 
-app.get("*", (_, res) => {
+app.get("*", (_, res: Response) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
