@@ -1,7 +1,7 @@
 {
   "name": "chat-app-server",
   "version": "1.0.0",
-  "main": "main.js",
+  "main": "./out/main.js",
   "author": "hamida oussama islem",
   "license": "MIT",
   "dependencies": {
