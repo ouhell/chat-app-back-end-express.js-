@@ -17,7 +17,7 @@
     "uuid": "^9.0.0"
   },
   "scripts": {
-    "start": "node  ./dist/main.js",
+    "start": "tsc && node  ./out/main.js",
     "dev": "SET NODE_ENV=developement&nodemon  ./src/main.ts",
     "build": "tsc",
     "debug": "SET NODE_ENV=developement & ndb main.js",

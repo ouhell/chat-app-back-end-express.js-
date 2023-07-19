@@ -1,5 +1,7 @@
 import server from "../server/server";
 import { Server } from "socket.io";
+import { BlockStatusData } from "./types";
+import { Request } from "../../types/schemas";
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -16,6 +18,18 @@ io.on("connection", (socket) => {
     socket.join(userId);
   });
 
+  socket.on("block", (data: BlockStatusData) => {
+    console.log("blocking socket ", data);
+    socket.in(data.conversationId).emit("user blocked", data.conversationId);
+  });
+
+  socket.on("unblock", (data: BlockStatusData) => {
+    socket
+      .in(data.conversationId)
+      .in(data.targetUserId)
+      .emit("user unblocked", data.conversationId, data.targetUserId);
+  });
+
   socket.on("send request", (request) => {
     socket.in(request.destinator._id).emit("receive request", request);
     socket.in(request.requester._id).emit("receive request", request);
@@ -24,6 +38,17 @@ io.on("connection", (socket) => {
   socket.on("cancel request", (request) => {
     socket.in(request.destinator._id).emit("canceled request", request._id);
     socket.in(request.requester._id).emit("canceled request", request._id);
+  });
+
+  socket.on("accept request", (request: Request) => {
+    socket.in(request.destinator._id).emit("accepted request", request);
+    socket.in(request.requester._id).emit("accepted request", request);
+  });
+
+  socket.on("remove contact", (conversation_id, remover_id) => {
+    socket
+      .in(conversation_id)
+      .emit("remove contact", conversation_id, remover_id);
   });
   socket.on("chat", (conversation) => {
     socket.join(conversation);

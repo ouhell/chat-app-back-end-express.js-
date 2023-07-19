@@ -176,7 +176,7 @@ export const addImageMessage = async (
   const conversation = await ConversationModel.findById(conversation_id);
 
   if (!conversation) return next(ApiError.notFound("can't find coversation"));
-
+  conversation._id;
   if (conversation.identifier !== "public") {
     if (conversation.blocked.find((user) => user.toString() === user_id))
       return next(ApiError.forbidden("blocked"));

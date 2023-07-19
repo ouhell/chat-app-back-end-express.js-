@@ -206,6 +206,7 @@ export const blockContact = async (
   res: Response,
   next: NextFunction
 ) => {
+  console.log("blocking");
   const blockedUserId = req.params.id;
   const userId = req.userInfo._id;
   const convo_indentifier = createConversationId(userId, blockedUserId);

@@ -9,9 +9,7 @@ import ApiErrorHandler from "../error/ApiErrorHandler";
 
 const app = express();
 
-if (process.env.NODE_ENV == "developement") {
-  app.use(morgan("dev"));
-}
+app.use(morgan("dev"));
 
 app.use(express.json()); // for parsing request body json files
 
@@ -56,16 +54,15 @@ app.use("/api/messages", MessageRouter);
 //
 
 //
-app.use(express.static(path.join(__dirname, "..", "public")));
+app.use(express.static(path.join(__dirname, "..", "..", "public")));
 
 app.all("/api/*", (req: Request, res: Response) => {
   res.status(404).send("CANNOT FIND END POINT : " + req.url);
 });
 
 app.get("*", (_, res: Response) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "..", "..", "public", "index.html"));
 });
-
 // SETUP ERROR HANDLERS
 
 app.use(ApiErrorHandler);
