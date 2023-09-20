@@ -54,14 +54,16 @@ app.use("/api/messages", MessageRouter);
 //
 
 //
-app.use(express.static(path.join(__dirname, "..", "..", "public")));
+app.use(express.static(path.join(__dirname, "..", "..", "public", "dist")));
 
 app.all("/api/*", (req: Request, res: Response) => {
   res.status(404).send("CANNOT FIND END POINT : " + req.url);
 });
 
 app.get("*", (_, res: Response) => {
-  res.sendFile(path.join(__dirname, "..", "..", "public", "index.html"));
+  res.sendFile(
+    path.join(__dirname, "..", "..", "public", "dist", "index.html")
+  );
 });
 // SETUP ERROR HANDLERS
 
