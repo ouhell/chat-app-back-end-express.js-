@@ -2,8 +2,8 @@ import crypto from "crypto";
 
 class EncryptionHandler {
   static #algorithm = "aes-256-cbc";
-  static #initVectorString = process.env.CRYPTING_VECTOR as string;
-  static #SecurityKeyString = process.env.CRYPTING_SECURITY_KEY as string;
+  static #initVectorString = process.env.ENCRYPTING_VECTOR as string;
+  static #SecurityKeyString = process.env.ENCRYPTING_SECURITY_KEY as string;
   static #initVector = Buffer.from(this.#initVectorString, "hex");
   static #SecurityKey = Buffer.from(this.#SecurityKeyString, "hex");
 

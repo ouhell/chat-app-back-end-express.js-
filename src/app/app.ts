@@ -9,7 +9,9 @@ import ApiErrorHandler from "../error/ApiErrorHandler";
 
 const app = express();
 
-app.use(morgan("dev"));
+if (process.env.environment === "development") {
+  app.use(morgan("dev"));
+}
 
 app.use(express.json()); // for parsing request body json files
 
