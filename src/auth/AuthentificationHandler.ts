@@ -45,7 +45,7 @@ export function bindRole(path: string, ...roles: string[]) {
 
 function checkProtected(path: string) {
   let isProtected = false;
-  for (let protectedPath of protected_paths) {
+  for (const protectedPath of protected_paths) {
     if (comparePaths(path, protectedPath)) {
       isProtected = true;
       break;
@@ -57,7 +57,7 @@ function checkProtected(path: string) {
 
 function checkAllowed(path: string, method: string) {
   let isAllowed = false;
-  for (let allowedPath of allowed_paths) {
+  for (const allowedPath of allowed_paths) {
     if (comparePaths(path, allowedPath.path)) {
       if (allowedPath.methods.length !== 0) {
         if (!allowedPath.methods.includes(method)) continue;
@@ -71,7 +71,7 @@ function checkAllowed(path: string, method: string) {
 }
 function isRoleAllowed(path: string, role: string) {
   let isAllowed = true;
-  for (let dependance of role_dependant_paths) {
+  for (const dependance of role_dependant_paths) {
     if (comparePaths(path, dependance.path)) {
       isAllowed = dependance.roles.includes(role);
       break;
@@ -112,7 +112,7 @@ export function AuthenticationHandler(
       userinfo = userinfo as { _id: string; role: string };
       if (!isRoleAllowed(req.url, userinfo.role))
         return next(ApiError.forbidden("role permission denied"));
-      // @ts-ignore
+      // @ts-expect-error can be weird
       req.userInfo = userinfo;
 
       next();

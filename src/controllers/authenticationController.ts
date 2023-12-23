@@ -44,6 +44,7 @@ export const signup = async (
   res: Response,
   next: NextFunction
 ) => {
+  // eslint-disable-next-line prefer-const
   let { username, personal_name, password, email } = req.body;
   password = EncryptionHandler.encrypt(password);
   const user = new UserModel({ username, personal_name, password, email });

@@ -22,13 +22,18 @@
     "dev": "cross-env environment=development  nodemon  ./src/main.ts",
     "build": "tsc",
     "debug": "cross-env environment=development  ndb main.js",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",
     "@types/express-fileupload": "^1.4.1",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/morgan": "^1.9.4",
+    "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
     "nodemon": "^2.0.22",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.3"

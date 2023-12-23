@@ -1,5 +1,5 @@
 import { NextFunction, Response } from "express";
-import mongoose from "mongoose";
+import mongoose, { AnyExpression } from "mongoose";
 import MessageModel from "../schema/message/MessageModel";
 import ConversationModel from "../schema/message/ConversationModel";
 import UserModel from "../schema/user/UserModel";
@@ -10,13 +10,12 @@ import RequestModel from "../schema/request/RequestModel";
 import { storage } from "../firebase/config";
 import { AuthRequest } from "../types/AuthRequest";
 import fileUpload from "express-fileupload";
-
-const {
+import {
   deleteObject,
   ref,
   uploadBytes,
   getDownloadURL,
-} = require("firebase/storage");
+} from "firebase/storage";
 
 export const getUserById = async (
   req: AuthRequest,
@@ -441,7 +440,7 @@ export const getContactCandidates = async (
   filterList.push(new mongoose.Types.ObjectId(req.userInfo._id));
   filterList.concat(user.black_listed_users);
 
-  const matchQuery: any = {
+  const matchQuery: Record<string, AnyExpression> = {
     _id: { $not: { $in: filterList } },
     black_listed_users: { $ne: objectUserId },
   };
@@ -452,7 +451,7 @@ export const getContactCandidates = async (
     ];
   }
 
-  let candidates = await UserModel.aggregate([
+  const candidates = await UserModel.aggregate([
     { $match: matchQuery },
     { $limit: 10 },
     {

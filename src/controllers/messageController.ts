@@ -12,13 +12,13 @@ import fileUpload from "express-fileupload";
 import { MessagesPayload } from "./responseTypes/messageResponses";
 import { Paginated } from "./responseTypes/pagination";
 import { Message } from "../types/schemas";
-const {
+import { v4 } from "uuid";
+import {
   ref,
   uploadBytes,
   getDownloadURL,
   deleteObject,
-} = require("firebase/storage");
-const { v4 } = require("uuid");
+} from "firebase/storage";
 
 export const getConversationMessages = async (
   req: AuthRequest,
@@ -28,7 +28,7 @@ export const getConversationMessages = async (
   const page_size = 30;
   const conversation_id = req.params.id;
   const { skip } = req.query;
-  let offset: number = parseInt(skip as string) || 0;
+  const offset: number = parseInt(skip as string) || 0;
 
   const userId = req.userInfo._id;
   const conversation = await ConversationModel.findById(conversation_id);

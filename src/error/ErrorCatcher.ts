@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction } from "express";
 import ApiError from "./ApiError";
 
@@ -19,7 +20,7 @@ const ErrorCatcher = (
         );
       }
 
-      let content: string = "internal server error";
+      const content: string = "internal server error";
 
       next(new ApiError(500, content));
     }

@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import ApiError from "./ApiError";
 import { Request, Response, NextFunction } from "express";
 const ApiErrorHandler = (
   err: ApiError | any,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   if (err instanceof ApiError) {
     res.status(err.code).json(err);
