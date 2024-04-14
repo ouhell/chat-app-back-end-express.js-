@@ -4,11 +4,15 @@ import {
   signup,
   checkEmailExistance,
   checkUsernameExistance,
+  oauthLogin,
 } from "../controllers/authenticationController";
 import ErrorCatcher from "../error/ErrorCatcher";
 const AuthenticationRouter = express.Router();
 ErrorCatcher;
-AuthenticationRouter.route("/login").post(login);
+AuthenticationRouter.route("/login").post(ErrorCatcher(login));
+AuthenticationRouter.route("/login/oauth/google").post(
+  ErrorCatcher(oauthLogin)
+);
 AuthenticationRouter.route("/signup").post(ErrorCatcher(signup));
 AuthenticationRouter.route("/check/email/:value").get(
   ErrorCatcher(checkEmailExistance)
