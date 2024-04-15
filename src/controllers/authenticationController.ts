@@ -115,8 +115,14 @@ export const signup = async (
   const user = new UserModel({ username, personal_name, password, email });
 
   const createdUser = await user.save();
-
-  return res.status(201).json(createdUser);
+  const access_token = createJwtFromUser(createdUser);
+  return res.status(201).json({
+    access_token,
+    userId: createdUser._id,
+    userRole: createdUser.role,
+    username: createdUser.username,
+    profile_picture: createdUser.profile_picture,
+  });
 };
 
 export const checkEmailExistance = async (
