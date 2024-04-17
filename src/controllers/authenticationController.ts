@@ -8,6 +8,7 @@ import EncryptionHandler from "../security/EncryptionHandler";
 import axios from "axios";
 import { User } from "../types/schemas";
 import { generateRandomNumber } from "../util/general";
+import { AxiosError } from "axios";
 
 const createJwtFromUser = (user: HydratedDocument<User>): string => {
   const access_token = jwt.sign(
@@ -101,6 +102,9 @@ export const oauthLogin = async (
       });
     }
   } catch (e) {
+    if (e instanceof AxiosError) {
+      console.log("google token err :::", e.response);
+    }
     return next(ApiError.unauthorized("unable to reach to google account"));
   }
 };
