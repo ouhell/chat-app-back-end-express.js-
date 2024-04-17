@@ -103,9 +103,9 @@ export const oauthLogin = async (
     }
   } catch (e) {
     if (e instanceof AxiosError) {
-      console.log("google token err :::", e.response);
-      writeErrorLog(e.response);
     }
+    console.log("google token err :::", e);
+    writeErrorLog(e);
     return next(ApiError.unauthorized("unable to reach to google account"));
   }
 };
