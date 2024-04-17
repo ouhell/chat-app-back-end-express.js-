@@ -7,7 +7,7 @@ import ApiError from "../error/ApiError";
 import EncryptionHandler from "../security/EncryptionHandler";
 import axios from "axios";
 import { User } from "../types/schemas";
-import { generateRandomNumber } from "../util/general";
+import { generateRandomNumber, writeErrorLog } from "../util/general";
 import { AxiosError } from "axios";
 
 const createJwtFromUser = (user: HydratedDocument<User>): string => {
@@ -61,7 +61,7 @@ export const oauthLogin = async (
     const googleresp = await axios({
       url: `https://oauth2.googleapis.com/tokeninfo`,
       params: {
-        id_token,
+        // id_token,
       },
       method: "get",
     });
@@ -104,6 +104,7 @@ export const oauthLogin = async (
   } catch (e) {
     if (e instanceof AxiosError) {
       console.log("google token err :::", e.response);
+      writeErrorLog(e.response);
     }
     return next(ApiError.unauthorized("unable to reach to google account"));
   }

@@ -1,3 +1,7 @@
+import fs from "fs";
+import { BASE_PATH } from "./path";
+import safeStringify from "safe-json-stringify";
+import path from "path";
 export function generateRandomNumber(numDigits: number = 1) {
   // Create a string of the desired length filled with '9'
   const maxNumber = "9".repeat(numDigits);
@@ -12,4 +16,10 @@ export function generateRandomNumber(numDigits: number = 1) {
   const paddedNumber = randomNumber.toString().padStart(numDigits, "0");
 
   return paddedNumber;
+}
+
+export function writeErrorLog(obj: any) {
+  console.log("writing");
+  const data = obj;
+  fs.writeFileSync(path.join(BASE_PATH, "error.json"), safeStringify(data));
 }
