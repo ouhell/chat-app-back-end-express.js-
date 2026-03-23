@@ -7,16 +7,9 @@ import ApiError from "../error/ApiError";
 //const ErrorCatcher = require("../error/ErrorCatcher");
 
 import RequestModel from "../schema/request/RequestModel";
-import { storage } from "../firebase/config";
 import { AuthRequest } from "../types/AuthRequest";
 import fileUpload from "express-fileupload";
-
-const {
-  deleteObject,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} = require("firebase/storage");
+import { uploadToS3 } from "../storage/s3Storage";
 
 export const getUserById = async (
   req: AuthRequest,
@@ -591,12 +584,17 @@ export const updateProfilePicture = async (
   if (!req.files) return next(ApiError.badRequest("no file"));
   const image = req.files.profile_pic as fileUpload.UploadedFile;
   if (!image) return next(ApiError.badRequest("no image"));
-  const imageRef = ref(storage, "profile/" + req.userInfo._id);
-  const metadata = {
+  const extension = image.mimetype.includes("/")
+    ? image.mimetype.split("/")[1]
+    : "bin";
+  const profileKey = `profile/${req.userInfo._id}.${extension}`;
+
+  const { url } = await uploadToS3({
+    key: profileKey,
+    body: image.data,
     contentType: image.mimetype,
-  };
-  await uploadBytes(imageRef, image.data, metadata);
-  const url = await getDownloadURL(imageRef);
+  });
+
   await UserModel.findByIdAndUpdate(req.userInfo._id, {
     profile_picture: url,
   });
