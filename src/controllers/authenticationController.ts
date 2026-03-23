@@ -16,10 +16,10 @@ type Token = {
 };
 
 const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
-  const accessExpiresIn = 1000 * 60 * 15; // 15 min
-  const refreshExpiresIn = 1000 * 60 * 60 * 24 * 7; // 7 days
-  const accessExpiresAt = Date.now() + accessExpiresIn;
-  const refreshExpiresAt = Date.now() + refreshExpiresIn;
+  const accessExpiresInMs = 1000 * 60 * 15; // 15 min
+  const refreshExpiresInMs = 1000 * 60 * 60 * 24 * 7; // 7 days
+  const accessExpiresAt = Date.now() + accessExpiresInMs;
+  const refreshExpiresAt = Date.now() + refreshExpiresInMs;
   const access_token: Token = {
     value: jwt.sign(
       {
@@ -30,7 +30,7 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
       },
       process.env.ACCESS_TOKEN_SECRET as string,
       {
-        expiresIn: accessExpiresIn,
+        expiresIn: "15m",
       },
     ),
     expiresAt: accessExpiresAt,
@@ -46,7 +46,7 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
       },
       process.env.ACCESS_TOKEN_SECRET as string,
       {
-        expiresIn: refreshExpiresIn,
+        expiresIn: "7d",
       },
     ),
     expiresAt: refreshExpiresAt,
@@ -56,14 +56,30 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
 
 const authenticateUser = (user: HydratedDocument<User>, res: Response) => {
   const [access_token, refresh_token] = createJwtFromUser(user);
-  res.status(200).json({
+  const isProduction = process.env.environment === "production";
+
+  res.cookie("accessToken", access_token.value, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 15,
+  });
+
+  res.cookie("refreshToken", refresh_token.value, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+  });
+
+  return {
     access_token,
     refresh_token,
     userId: user._id,
     userRole: user.role,
     username: user.username,
     profile_picture: user.profile_picture,
-  });
+  };
 };
 
 export const login = async (
@@ -88,7 +104,7 @@ export const login = async (
     return;
   }
 
-  res.status(200).json(authenticateUser(user, res));
+  return res.status(200).json(authenticateUser(user, res));
 };
 
 export const oauthLogin = async (

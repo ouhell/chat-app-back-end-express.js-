@@ -93,29 +93,46 @@ function comparePaths(exactPath: string, pathModel: string) {
   return pathModel === exactPath;
 }
 
-export function AuthenticationHandler(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  if (!checkProtected(req.url)) return next();
-  if (checkAllowed(req.url, req.method)) return next(); // if path is allowed without authentification
-  const authorization = req.headers.authorization;
-
-  const authToken = authorization && authorization.split(" ")[1];
-  if (!authToken) return next(ApiError.unauthorized("no authorization token"));
+const verityToken = (authToken: string, req: Request, next: NextFunction) => {
   jwt.verify(
     authToken,
     process.env.ACCESS_TOKEN_SECRET as string,
     (err, userinfo) => {
       if (err) return next(ApiError.forbidden("faulty access token"));
-      userinfo = userinfo as { _id: string; role: string };
+      userinfo = userinfo as { _id: string; role: string; type: string };
+
+      if (userinfo.type !== "access")
+        return next(ApiError.forbidden("not an access token"));
       if (!isRoleAllowed(req.url, userinfo.role))
         return next(ApiError.forbidden("role permission denied"));
       // @ts-ignore
       req.userInfo = userinfo;
 
       next();
-    }
+    },
   );
+};
+
+export function AuthenticationHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (!checkProtected(req.url)) return next();
+  if (checkAllowed(req.url, req.method)) return next(); // if path is allowed without authentification
+
+  console.log("cookies", req.cookies);
+  let accessToken = req.cookies["accessToken"];
+
+  // if not available in cookie , check auth header
+  if (!accessToken) {
+    const authorization = req.headers.authorization;
+
+    accessToken = authorization && authorization.split(" ")[1];
+  }
+
+  if (!accessToken)
+    return next(ApiError.unauthorized("no authorization token"));
+
+  verityToken(accessToken, req, next);
 }
