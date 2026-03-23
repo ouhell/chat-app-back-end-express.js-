@@ -6,24 +6,18 @@ import UserModel from "../schema/user/UserModel";
 import ApiError from "../error/ApiError";
 //const ErrorCatcher = require("../error/ErrorCatcher");
 import fileupload from "express-fileupload";
-import { storage } from "../firebase/config";
 import { AuthRequest } from "../types/AuthRequest";
 import fileUpload from "express-fileupload";
 import { MessagesPayload } from "./responseTypes/messageResponses";
 import { Paginated } from "./responseTypes/pagination";
 import { Message } from "../types/schemas";
-const {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} = require("firebase/storage");
+import { deleteFromS3, uploadToS3 } from "../storage/s3Storage";
 const { v4 } = require("uuid");
 
 export const getConversationMessages = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const page_size = 30;
   const conversation_id = req.params.id;
@@ -99,7 +93,7 @@ export const getConversationMessages = async (
 export const deleteMessage = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   let message_id = req.params.id;
   const userId = req.userInfo._id;
@@ -118,7 +112,7 @@ export const deleteMessage = async (
 export const addTextMessage = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const conversation_id = req.params.id;
   const user_id = req.userInfo._id;
@@ -154,7 +148,7 @@ export const addTextMessage = async (
 export const addImageMessage = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const conversation_id = req.params.id;
 
@@ -167,10 +161,6 @@ export const addImageMessage = async (
 
   if (!acceptedImageTypes.includes(file.mimetype))
     return next(ApiError.badRequest("only accept .png .jpg .gif"));
-
-  const metadata = {
-    contentType: file.mimetype,
-  };
 
   // find if conversation exists and not blocked
   const conversation = await ConversationModel.findById(conversation_id);
@@ -185,13 +175,11 @@ export const addImageMessage = async (
       return next(ApiError.forbidden("not a part of the conversation"));
   }
 
-  const fileRef = ref(storage, "images/" + v4());
-
-  let url = null;
-
-  await uploadBytes(fileRef, file.data, metadata);
-
-  url = await getDownloadURL(fileRef);
+  const { key, url } = await uploadToS3({
+    key: `images/${v4()}`,
+    body: file.data,
+    contentType: file.mimetype,
+  });
 
   try {
     const createdMessage = await MessageModel.create({
@@ -203,7 +191,7 @@ export const addImageMessage = async (
 
     return res.status(201).json(createdMessage);
   } catch (err) {
-    deleteObject(fileRef);
+    await deleteFromS3(key);
     next(ApiError.internal("couldnt send message"));
   }
 };
@@ -212,14 +200,14 @@ export const imageMessageFileCatch = fileupload({
   limits: { fileSize: 1024 * 1024 },
   limitHandler: async (req, res, next) => {
     return next(
-      ApiError.badRequest("file size surpass allowed limits of 1 megabytes")
+      ApiError.badRequest("file size surpass allowed limits of 1 megabytes"),
     );
   },
 });
 export const addVoiceMessage = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const conversation_id = req.params.id;
   const user_id = req.userInfo._id;
@@ -233,13 +221,6 @@ export const addVoiceMessage = async (
   if (!acceptedAudioTypes.includes(file.mimetype))
     return next(ApiError.badRequest("only accept mp3"));
 
-  const metadata = {
-    contentType: file.mimetype,
-    customMetadata: {
-      duration: Math.floor(duration) + "",
-    },
-  };
-
   const conversation = await ConversationModel.findById(conversation_id);
 
   if (!conversation) return next(ApiError.notFound("can't find coversation"));
@@ -252,13 +233,18 @@ export const addVoiceMessage = async (
       return next(ApiError.forbidden("not a part of the conversation"));
   }
 
-  const fileRef = ref(storage, "audio/" + v4() + "." + file.mimetype.substr(6));
+  const extension = file.mimetype.includes("/")
+    ? file.mimetype.split("/")[1]
+    : "bin";
 
-  // let url = null;
-
-  await uploadBytes(fileRef, file.data, metadata);
-
-  const url = await getDownloadURL(fileRef);
+  const { key, url } = await uploadToS3({
+    key: `audio/${v4()}.${extension}`,
+    body: file.data,
+    contentType: file.mimetype,
+    metadata: {
+      duration: Math.floor(duration) + "",
+    },
+  });
 
   try {
     const createdMessage = await MessageModel.create({
@@ -270,7 +256,7 @@ export const addVoiceMessage = async (
 
     return res.status(201).json(createdMessage);
   } catch (err) {
-    deleteObject(fileRef);
+    await deleteFromS3(key);
     next(ApiError.internal("couldnt send message"));
   }
 };
@@ -279,7 +265,7 @@ export const voiceMessageFileCatch = fileupload({
   limits: { fileSize: 1024 * 1024 * 5 },
   limitHandler: async (req, res, next) => {
     return next(
-      ApiError.badRequest("file size surpass allowed limits of 5 megabytes")
+      ApiError.badRequest("file size surpass allowed limits of 5 megabytes"),
     );
   },
 });
