@@ -7,6 +7,7 @@ import AuthenticationRouter from "../routes/authenticationRoutes";
 import UserRouter from "../routes/userRoutes";
 import MessageRouter from "../routes/messageRoutes";
 import ApiErrorHandler from "../error/ApiErrorHandler";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -16,8 +17,22 @@ if (process.env.environment === "development") {
 
 app.use(express.json()); // for parsing request body json files
 
+app.use(cookieParser());
 //SETUP CORS ALLOWS
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  process.env.CLIENT_ORIGIN,
+].filter(Boolean) as string[];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true, // allows cookies to be sent cross-origin
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 //
 
 // SETUP PRE HANDLERS
@@ -99,7 +114,7 @@ app.all("/api/*", (req: Request, res: Response) => {
 
 app.get("*", (_, res: Response) => {
   res.sendFile(
-    path.join(__dirname, "..", "..", "public", "dist", "index.html")
+    path.join(__dirname, "..", "..", "public", "dist", "index.html"),
   );
 });
 // SETUP ERROR HANDLERS
