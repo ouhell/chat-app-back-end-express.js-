@@ -1,5 +1,5 @@
 import { Response, Request, NextFunction } from "express";
-import { HydratedDocument } from "mongoose";
+import mongoose, { HydratedDocument } from "mongoose";
 
 import UserModel from "../schema/user/UserModel";
 import jwt from "jsonwebtoken";
@@ -20,6 +20,8 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
   const refreshExpiresInMs = 1000 * 60 * 60 * 24 * 7; // 7 days
   const accessExpiresAt = Date.now() + accessExpiresInMs;
   const refreshExpiresAt = Date.now() + refreshExpiresInMs;
+  const accessSecret = process.env.ACCESS_TOKEN_SECRET as string;
+  const refreshSecret = process.env.REFRESH_TOKEN_SECRET as string;
   const access_token: Token = {
     value: jwt.sign(
       {
@@ -28,7 +30,7 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
         type: "access",
         expiresAt: accessExpiresAt,
       },
-      process.env.ACCESS_TOKEN_SECRET as string,
+      accessSecret,
       {
         expiresIn: "15m",
       },
@@ -44,7 +46,7 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
         type: "refresh",
         expiresAt: refreshExpiresAt,
       },
-      process.env.ACCESS_TOKEN_SECRET as string,
+      refreshSecret,
       {
         expiresIn: "7d",
       },
@@ -57,18 +59,21 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
 const authenticateUser = (user: HydratedDocument<User>, res: Response) => {
   const [access_token, refresh_token] = createJwtFromUser(user);
   const isProduction = process.env.environment === "production";
+  const sameSite: "lax" | "none" = isProduction ? "none" : "lax";
 
   res.cookie("accessToken", access_token.value, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: "lax",
+    sameSite,
+    path: "/",
     maxAge: 1000 * 60 * 15,
   });
 
   res.cookie("refreshToken", refresh_token.value, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: "lax",
+    sameSite,
+    path: "/",
     maxAge: 1000 * 60 * 60 * 24 * 7,
   });
 
@@ -80,6 +85,17 @@ const authenticateUser = (user: HydratedDocument<User>, res: Response) => {
     username: user.username,
     profile_picture: user.profile_picture,
   };
+};
+
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+
+  return res.sendStatus(201);
 };
 
 export const login = async (
@@ -192,4 +208,39 @@ export const checkUsernameExistance = async (
   if (username) return res.status(200).json(true);
 
   return res.status(200).json(false);
+};
+
+export const refreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const tokenFromCookie = req.cookies?.refreshToken as string | undefined;
+  const authHeaderToken = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.split(" ")[1]
+    : undefined;
+  const tokenFromBody = req.body?.refreshToken as string | undefined;
+  const refreshTokenValue = tokenFromCookie || tokenFromBody || authHeaderToken;
+
+  if (!refreshTokenValue)
+    return next(ApiError.forbidden("no refresh token was provided"));
+
+  jwt.verify(
+    refreshTokenValue,
+    process.env.REFRESH_TOKEN_SECRET as string,
+    async (err, val) => {
+      if (err) return next(ApiError.forbidden("expired token"));
+      const userData = val as { _id: string; role: string; type: string };
+      if (userData.type !== "refresh")
+        return next(ApiError.forbidden("not a refresh token"));
+
+      const user = await UserModel.findById(
+        new mongoose.Types.ObjectId(userData._id),
+      );
+
+      if (!user) return next(ApiError.notFound("user not found"));
+
+      return res.json(authenticateUser(user, res));
+    },
+  );
 };
