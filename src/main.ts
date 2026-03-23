@@ -19,22 +19,21 @@ console.log(io._connectTimeout);
 
 function connectToDatabase(app: Express) {
   const URI = process.env.DATABASE_CONNECTION_URI as string;
-  mongoose
-    .connect(URI)
-    .then(() => {
-      console.log("MONGODB CONNECTED ::");
-      startServer();
-    })
-    .catch((err) => {
-      console.log(
-        "MONGO DATABASE COULD NOT CONNECT : ",
-        err,
-        "\n RETRYING IN 5 SECONDS"
-      );
-      setTimeout(() => {
-        connectToDatabase(app);
-      }, 5000);
-    });
+  console.log("mongo db uri", URI);
+  mongoose.connect(URI).then(() => {
+    console.log("MONGODB CONNECTED ::");
+    startServer();
+  });
+  // .catch((err) => {
+  //   console.log(
+  //     "MONGO DATABASE COULD NOT CONNECT : ",
+  //     err,
+  //     "\n RETRYING IN 5 SECONDS",
+  //   );
+  //   setTimeout(() => {
+  //     connectToDatabase(app);
+  //   }, 5000);
+  // });
 }
 
 function startServer() {

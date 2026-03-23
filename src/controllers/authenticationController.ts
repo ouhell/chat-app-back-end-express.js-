@@ -10,18 +10,66 @@ import { User } from "../types/schemas";
 import { generateRandomNumber, writeErrorLog } from "../util/general";
 import { AxiosError } from "axios";
 
-const createJwtFromUser = (user: HydratedDocument<User>): string => {
-  const access_token = jwt.sign(
-    { _id: user._id, role: user.role },
-    process.env.ACCESS_TOKEN_SECRET as string
-  );
-  return access_token;
+type Token = {
+  value: string;
+  expiresAt: number;
+};
+
+const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
+  const accessExpiresIn = 1000 * 60 * 15; // 15 min
+  const refreshExpiresIn = 1000 * 60 * 60 * 24 * 7; // 7 days
+  const accessExpiresAt = Date.now() + accessExpiresIn;
+  const refreshExpiresAt = Date.now() + refreshExpiresIn;
+  const access_token: Token = {
+    value: jwt.sign(
+      {
+        _id: user._id,
+        role: user.role,
+        type: "access",
+        expiresAt: accessExpiresAt,
+      },
+      process.env.ACCESS_TOKEN_SECRET as string,
+      {
+        expiresIn: accessExpiresIn,
+      },
+    ),
+    expiresAt: accessExpiresAt,
+  };
+
+  const refreshToken: Token = {
+    value: jwt.sign(
+      {
+        _id: user._id,
+        role: user.role,
+        type: "refresh",
+        expiresAt: refreshExpiresAt,
+      },
+      process.env.ACCESS_TOKEN_SECRET as string,
+      {
+        expiresIn: refreshExpiresIn,
+      },
+    ),
+    expiresAt: refreshExpiresAt,
+  };
+  return [access_token, refreshToken];
+};
+
+const authenticateUser = (user: HydratedDocument<User>, res: Response) => {
+  const [access_token, refresh_token] = createJwtFromUser(user);
+  res.status(200).json({
+    access_token,
+    refresh_token,
+    userId: user._id,
+    userRole: user.role,
+    username: user.username,
+    profile_picture: user.profile_picture,
+  });
 };
 
 export const login = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const identifier = req.body.identifier; // username or email
   const password = req.body.password;
@@ -31,6 +79,7 @@ export const login = async (
   // if user with given username or email does not exist in the database
   if (!user) {
     next(ApiError.unauthorized(`incorrect username`));
+
     return;
   }
   // if password does not match
@@ -39,21 +88,13 @@ export const login = async (
     return;
   }
 
-  const access_token = createJwtFromUser(user);
-
-  res.status(200).json({
-    access_token,
-    userId: user._id,
-    userRole: user.role,
-    username: user.username,
-    profile_picture: user.profile_picture,
-  });
+  res.status(200).json(authenticateUser(user, res));
 };
 
 export const oauthLogin = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { id_token } = req.body;
@@ -67,7 +108,6 @@ export const oauthLogin = async (
     });
 
     const googleData = googleresp.data;
-    let access_token = null;
 
     const existingUser = await UserModel.findOne({
       provider: "google",
@@ -75,14 +115,7 @@ export const oauthLogin = async (
     });
 
     if (existingUser) {
-      access_token = createJwtFromUser(existingUser);
-      return res.status(200).json({
-        access_token,
-        userId: existingUser._id,
-        userRole: existingUser.role,
-        username: existingUser.username,
-        profile_picture: existingUser.profile_picture,
-      });
+      return res.status(200).json(authenticateUser(existingUser, res));
     } else {
       const createdUser = await UserModel.create({
         email: googleData.email,
@@ -92,14 +125,7 @@ export const oauthLogin = async (
         provider: "google",
         password: EncryptionHandler.encrypt(crypto.randomUUID()),
       });
-      access_token = createJwtFromUser(createdUser);
-      return res.status(201).json({
-        access_token,
-        userId: createdUser._id,
-        userRole: createdUser.role,
-        username: createdUser.username,
-        profile_picture: createdUser.profile_picture,
-      });
+      return res.status(201).json(authenticateUser(createdUser, res));
     }
   } catch (e) {
     if (e instanceof AxiosError) {
@@ -113,27 +139,21 @@ export const oauthLogin = async (
 export const signup = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   let { username, personal_name, password, email } = req.body;
   password = EncryptionHandler.encrypt(password);
   const user = new UserModel({ username, personal_name, password, email });
 
   const createdUser = await user.save();
-  const access_token = createJwtFromUser(createdUser);
-  return res.status(201).json({
-    access_token,
-    userId: createdUser._id,
-    userRole: createdUser.role,
-    username: createdUser.username,
-    profile_picture: createdUser.profile_picture,
-  });
+
+  return res.status(201).json(authenticateUser(createdUser, res));
 };
 
 export const checkEmailExistance = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const checkEmail = req.params.value;
   const email = await UserModel.exists({
@@ -147,7 +167,7 @@ export const checkEmailExistance = async (
 export const checkUsernameExistance = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const checkUsername = req.params.value;
   const username = await UserModel.exists({
