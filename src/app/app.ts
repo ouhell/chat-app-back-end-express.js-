@@ -42,6 +42,7 @@ import {
   allowPath,
 } from "../auth/AuthentificationHandler";
 import { BASE_PATH, SOURCE_PATH } from "../util/path";
+import AIRouter from "../routes/aiRoutes";
 
 /*
   URL CORRECTOR  "remove last /"
@@ -70,6 +71,7 @@ allowPath("/api/auth/*");
 app.use("/api/auth", AuthenticationRouter);
 app.use("/api/users", UserRouter);
 app.use("/api/messages", MessageRouter);
+app.use("/api/ai", AIRouter);
 //
 
 //

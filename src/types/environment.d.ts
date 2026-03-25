@@ -14,6 +14,7 @@ declare global {
       AWS_S3_ENDPOINT?: string;
       AWS_S3_FORCE_PATH_STYLE?: string;
       environment: "development" | "production";
+      GEMINI_API_KEY?: string;
     }
   }
 }
