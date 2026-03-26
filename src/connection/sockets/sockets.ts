@@ -1,7 +1,7 @@
 import server from "../server/server";
 import { Server } from "socket.io";
 import { BlockStatusData } from "./types";
-import { Request } from "../../types/schemas";
+import { Request } from "../../@types/schemas";
 const io = new Server(server, {
   cors: {
     origin: "*",

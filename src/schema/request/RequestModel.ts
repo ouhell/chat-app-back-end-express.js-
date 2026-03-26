@@ -1,5 +1,5 @@
 import { Schema, Types, model } from "mongoose";
-import { Request } from "../../types/schemas";
+import { Request } from "../../@types/schemas";
 const RequestSchema = new Schema<Request>({
   requester: { type: Types.ObjectId, required: true },
   destinator: { type: Types.ObjectId, required: true },

@@ -1,5 +1,5 @@
 import { Schema, model, Types } from "mongoose";
-import { Conversation } from "../../types/schemas";
+import { Conversation } from "../../@types/schemas";
 
 const ConversationSchema = new Schema<Conversation>({
   identifier: { type: String, required: true },

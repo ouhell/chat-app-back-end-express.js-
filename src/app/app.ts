@@ -3,9 +3,9 @@ import path from "path";
 import cors from "cors";
 import fs from "fs";
 import morgan from "morgan";
-import AuthenticationRouter from "../routes/authenticationRoutes";
-import UserRouter from "../routes/userRoutes";
-import MessageRouter from "../routes/messageRoutes";
+import AuthenticationRouter from "../routes/authentication.routes";
+import UserRouter from "../routes/user.routes";
+import MessagesRouter from "../routes/message.routes";
 import ApiErrorHandler from "../error/ApiErrorHandler";
 import cookieParser from "cookie-parser";
 import { ENV } from "../config/env";
@@ -17,7 +17,7 @@ import {
   allowPath,
 } from "../auth/AuthentificationHandler";
 import { BASE_PATH, SOURCE_PATH } from "../util/path";
-import AIRouter from "../routes/aiRoutes";
+import AIRouter from "../routes/ai.routes";
 
 const app = express();
 
@@ -71,7 +71,7 @@ allowPath("/api/auth/*");
 
 app.use("/api/auth", AuthenticationRouter);
 app.use("/api/users", UserRouter);
-app.use("/api/messages", MessageRouter);
+app.use("/api/messages", MessagesRouter);
 app.use("/api/ai", AIRouter);
 //
 

@@ -1,4 +1,4 @@
-import { NextFunction, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import MessageModel from "../schema/message/MessageModel";
 import ConversationModel from "../schema/message/ConversationModel";
@@ -7,14 +7,14 @@ import ApiError from "../error/ApiError";
 //const ErrorCatcher = require("../error/ErrorCatcher");
 
 import RequestModel from "../schema/request/RequestModel";
-import { AuthRequest } from "../types/AuthRequest";
+
 import fileUpload from "express-fileupload";
 import { uploadToS3 } from "../storage/s3Storage";
 
 export const getUserById = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const user = await UserModel.findById(req.params.id);
   if (!user) return ApiError.notFound("user does not exist");
@@ -22,9 +22,9 @@ export const getUserById = async (
 };
 
 export const getPublicConversations = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const publicConversations = await ConversationModel.find({
     identifier: "public",
@@ -33,9 +33,9 @@ export const getPublicConversations = async (
 };
 
 export const getContacts = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const conversations = await ConversationModel.aggregate([
     {
@@ -81,9 +81,9 @@ export const getContacts = async (
 };
 
 export const addContact = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const postedId = req.params.id;
   const userId = req.userInfo._id;
@@ -118,7 +118,7 @@ export const addContact = async (
   //check if convo already exists
   const convo_indentifier = createConversationId(
     userId,
-    request.requester.toString()
+    request.requester.toString(),
   );
 
   const conversation = await ConversationModel.exists({
@@ -144,9 +144,9 @@ export const addContact = async (
 };
 
 export const deleteContact = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const contactId = req.params.id;
   const userId = req.userInfo._id;
@@ -167,9 +167,9 @@ export const deleteContact = async (
 };
 
 export const blacklistUser = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const blackListedUserId = req.params.id;
   const userId = req.userInfo._id;
@@ -195,9 +195,9 @@ export const blacklistUser = async (
 };
 
 export const blockContact = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   console.log("blocking");
   const blockedUserId = req.params.id;
@@ -222,9 +222,9 @@ export const blockContact = async (
 };
 
 export const unblockContact = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const blockedUserId = req.params.id;
   const userId = req.userInfo._id;
@@ -240,16 +240,16 @@ export const unblockContact = async (
   if (!conversation.blocked.find((user) => user.toString() === blockedUserId))
     return next(ApiError.forbidden("user not blocked"));
   conversation.blocked = conversation.blocked.filter(
-    (user) => user._id.toString() !== blockedUserId
+    (user) => user._id.toString() !== blockedUserId,
   );
   await conversation.save();
   return res.sendStatus(200);
 };
 
 export const getContactRequests = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   /* const requests = await RequestModel.find({
     $or: [{ requester: req.userInfo._id }, { destinator: req.userInfo._id }],
@@ -296,9 +296,9 @@ export const getContactRequests = async (
   return res.status(200).json(requests);
 };
 export const addContactRequest = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const destinator = req.params.id;
   if (req.userInfo._id === destinator)
@@ -364,9 +364,9 @@ export const addContactRequest = async (
   return res.status(201).json(appendedRequest[0]);
 };
 export const deleteContactRequest = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const postedId = req.params.id;
 
@@ -387,9 +387,9 @@ export const deleteContactRequest = async (
   return res.status(200).json(request);
 };
 export const getContactCandidates = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const searchtext = req.query.search as string;
 
@@ -419,11 +419,11 @@ export const getContactCandidates = async (
     (contacts: mongoose.Types.ObjectId[], convo) => {
       return contacts.concat(
         convo.users.filter(
-          (user) => user._id.toString() !== user._id.toString()
-        )
+          (user) => user._id.toString() !== user._id.toString(),
+        ),
       );
     },
-    []
+    [],
   );
   //   .map((convo) => {
   //     let user = convo.users.find((user) => user.toString() !== req.userInfo._id);
@@ -463,9 +463,9 @@ export const getContactCandidates = async (
   return res.status(200).json(candidates);
 };
 export const getSelfProfile = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const objectUserId = new mongoose.Types.ObjectId(req.userInfo._id);
   const profile = await UserModel.aggregate([
@@ -483,9 +483,9 @@ export const getSelfProfile = async (
   res.status(200).json(profile[0]);
 };
 export const getUserProfile = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const id = req.params.id;
 
@@ -506,9 +506,9 @@ export const getUserProfile = async (
   res.status(200).json(profile[0]);
 };
 export const getContactProfileByConversationId = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const conversationId = req.params.id;
 
@@ -559,9 +559,9 @@ export const getContactProfileByConversationId = async (
 };
 
 export const updateProfile = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const { username, personal_name, email } = req.body;
   if (!(username && personal_name && email))
@@ -577,9 +577,9 @@ export const updateProfile = async (
   res.status(200).json(savedUser);
 };
 export const updateProfilePicture = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   if (!req.files) return next(ApiError.badRequest("no file"));
   const image = req.files.profile_pic as fileUpload.UploadedFile;
