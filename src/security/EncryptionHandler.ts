@@ -1,9 +1,10 @@
 import crypto from "crypto";
+import { ENV } from "../config/env";
 
 class EncryptionHandler {
   static #algorithm = "aes-256-cbc";
-  static #initVectorString = process.env.ENCRYPTING_VECTOR as string;
-  static #SecurityKeyString = process.env.ENCRYPTING_SECURITY_KEY as string;
+  static #initVectorString = ENV.ENCRYPTING_VECTOR as string;
+  static #SecurityKeyString = ENV.ENCRYPTING_SECURITY_KEY as string;
   static #initVector = Uint8Array.from(
     Buffer.from(this.#initVectorString, "hex"),
   );

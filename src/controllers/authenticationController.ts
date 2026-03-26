@@ -9,6 +9,7 @@ import axios from "axios";
 import { User } from "../types/schemas";
 import { generateRandomNumber, writeErrorLog } from "../util/general";
 import { AxiosError } from "axios";
+import { ENV } from "../config/env";
 
 type Token = {
   value: string;
@@ -20,8 +21,8 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
   const refreshExpiresInMs = 1000 * 60 * 60 * 24 * 7; // 7 days
   const accessExpiresAt = Date.now() + accessExpiresInMs;
   const refreshExpiresAt = Date.now() + refreshExpiresInMs;
-  const accessSecret = process.env.ACCESS_TOKEN_SECRET as string;
-  const refreshSecret = process.env.REFRESH_TOKEN_SECRET as string;
+  const accessSecret = ENV.ACCESS_TOKEN_SECRET as string;
+  const refreshSecret = ENV.REFRESH_TOKEN_SECRET as string;
   const access_token: Token = {
     value: jwt.sign(
       {
@@ -58,7 +59,7 @@ const createJwtFromUser = (user: HydratedDocument<User>): [Token, Token] => {
 
 const authenticateUser = (user: HydratedDocument<User>, res: Response) => {
   const [access_token, refresh_token] = createJwtFromUser(user);
-  const isProduction = process.env.environment === "production";
+  const isProduction = ENV.NODE_ENV === "production";
   const sameSite: "lax" | "none" = isProduction ? "none" : "lax";
 
   res.cookie("accessToken", access_token.value, {
@@ -227,7 +228,7 @@ export const refreshToken = async (
 
   jwt.verify(
     refreshTokenValue,
-    process.env.REFRESH_TOKEN_SECRET as string,
+    ENV.REFRESH_TOKEN_SECRET as string,
     async (err, val) => {
       if (err) return next(ApiError.forbidden("expired token"));
       const userData = val as { _id: string; role: string; type: string };

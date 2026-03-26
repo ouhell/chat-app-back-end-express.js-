@@ -3,22 +3,21 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { ENV } from "../config/env";
 
 const DEFAULT_AWS_REGION = "YOUR_AWS_REGION";
 const DEFAULT_AWS_ACCESS_KEY_ID = "YOUR_AWS_ACCESS_KEY_ID";
 const DEFAULT_AWS_SECRET_ACCESS_KEY = "YOUR_AWS_SECRET_ACCESS_KEY";
 const DEFAULT_AWS_BUCKET_NAME = "YOUR_AWS_BUCKET_NAME";
 
-const AWS_REGION = process.env.AWS_REGION || DEFAULT_AWS_REGION;
-const AWS_ACCESS_KEY_ID =
-  process.env.AWS_ACCESS_KEY_ID || DEFAULT_AWS_ACCESS_KEY_ID;
+const AWS_REGION = ENV.AWS_REGION || DEFAULT_AWS_REGION;
+const AWS_ACCESS_KEY_ID = ENV.AWS_ACCESS_KEY_ID || DEFAULT_AWS_ACCESS_KEY_ID;
 const AWS_SECRET_ACCESS_KEY =
-  process.env.AWS_SECRET_ACCESS_KEY || DEFAULT_AWS_SECRET_ACCESS_KEY;
-const AWS_S3_BUCKET_NAME =
-  process.env.AWS_S3_BUCKET_NAME || DEFAULT_AWS_BUCKET_NAME;
-const AWS_S3_ENDPOINT = process.env.AWS_S3_ENDPOINT?.trim();
+  ENV.AWS_SECRET_ACCESS_KEY || DEFAULT_AWS_SECRET_ACCESS_KEY;
+const AWS_S3_BUCKET_NAME = ENV.AWS_S3_BUCKET_NAME || DEFAULT_AWS_BUCKET_NAME;
+const AWS_S3_ENDPOINT = ENV.AWS_S3_ENDPOINT?.trim();
 const AWS_S3_FORCE_PATH_STYLE =
-  (process.env.AWS_S3_FORCE_PATH_STYLE || "true").toLowerCase() === "true";
+  (ENV.AWS_S3_FORCE_PATH_STYLE || "true").toLowerCase() === "true";
 
 const s3ClientConfig: ConstructorParameters<typeof S3Client>[0] = {
   region: AWS_REGION,

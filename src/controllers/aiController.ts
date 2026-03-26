@@ -7,11 +7,12 @@ import {
 } from "@langchain/core/prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { NextFunction, Request, Response } from "express";
+import { ENV } from "../config/env";
 
 export class AIController {
   private static readonly model = new ChatGoogleGenerativeAI({
     model: "gemini-2.5-flash",
-    apiKey: process.env.GEMINI_API_KEY,
+    apiKey: ENV.GEMINI_API_KEY,
     maxRetries: 0,
   });
 

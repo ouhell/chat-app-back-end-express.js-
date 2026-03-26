@@ -8,10 +8,20 @@ import UserRouter from "../routes/userRoutes";
 import MessageRouter from "../routes/messageRoutes";
 import ApiErrorHandler from "../error/ApiErrorHandler";
 import cookieParser from "cookie-parser";
+import { ENV } from "../config/env";
+
+// SETUP PRE HANDLERS
+import {
+  AuthenticationHandler,
+  protectPath,
+  allowPath,
+} from "../auth/AuthentificationHandler";
+import { BASE_PATH, SOURCE_PATH } from "../util/path";
+import AIRouter from "../routes/aiRoutes";
 
 const app = express();
 
-if (process.env.environment === "development") {
+if (ENV.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
@@ -22,7 +32,7 @@ app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
-  process.env.CLIENT_ORIGIN,
+  ENV.CLIENT_ORIGIN,
 ].filter(Boolean) as string[];
 
 app.use(
@@ -34,15 +44,6 @@ app.use(
   }),
 );
 //
-
-// SETUP PRE HANDLERS
-import {
-  AuthenticationHandler,
-  protectPath,
-  allowPath,
-} from "../auth/AuthentificationHandler";
-import { BASE_PATH, SOURCE_PATH } from "../util/path";
-import AIRouter from "../routes/aiRoutes";
 
 /*
   URL CORRECTOR  "remove last /"
