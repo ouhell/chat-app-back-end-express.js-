@@ -1,5 +1,5 @@
 import { Schema, Types, model } from "mongoose";
-import { Message } from "../../types/schemas";
+import { Message } from "../../@types/schemas";
 
 const MessageSchema = new Schema<Message>({
   sender: { type: Types.ObjectId, required: true, immutable: true },

@@ -3,15 +3,25 @@ import path from "path";
 import cors from "cors";
 import fs from "fs";
 import morgan from "morgan";
-import AuthenticationRouter from "../routes/authenticationRoutes";
-import UserRouter from "../routes/userRoutes";
-import MessageRouter from "../routes/messageRoutes";
+import AuthenticationRouter from "../routes/authentication.routes";
+import UserRouter from "../routes/user.routes";
+import MessagesRouter from "../routes/message.routes";
 import ApiErrorHandler from "../error/ApiErrorHandler";
 import cookieParser from "cookie-parser";
+import { ENV } from "../config/env";
+
+// SETUP PRE HANDLERS
+import {
+  AuthenticationHandler,
+  protectPath,
+  allowPath,
+} from "../auth/AuthentificationHandler";
+import { BASE_PATH, SOURCE_PATH } from "../util/path";
+import AIRouter from "../routes/ai.routes";
 
 const app = express();
 
-if (process.env.environment === "development") {
+if (ENV.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
@@ -22,7 +32,7 @@ app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
-  process.env.CLIENT_ORIGIN,
+  ENV.CLIENT_ORIGIN,
 ].filter(Boolean) as string[];
 
 app.use(
@@ -34,14 +44,6 @@ app.use(
   }),
 );
 //
-
-// SETUP PRE HANDLERS
-import {
-  AuthenticationHandler,
-  protectPath,
-  allowPath,
-} from "../auth/AuthentificationHandler";
-import { BASE_PATH, SOURCE_PATH } from "../util/path";
 
 /*
   URL CORRECTOR  "remove last /"
@@ -69,7 +71,8 @@ allowPath("/api/auth/*");
 
 app.use("/api/auth", AuthenticationRouter);
 app.use("/api/users", UserRouter);
-app.use("/api/messages", MessageRouter);
+app.use("/api/messages", MessagesRouter);
+app.use("/api/ai", AIRouter);
 //
 
 //

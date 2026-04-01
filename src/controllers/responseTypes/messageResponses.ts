@@ -1,4 +1,4 @@
-import { Conversation, Message } from "../../types/schemas";
+import { Conversation, Message } from "../../@types/schemas";
 import { Paginated } from "./pagination";
 
 export type MessagesPayload = {

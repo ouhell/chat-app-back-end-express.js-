@@ -1,5 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
 import { Express } from "express";
 import app from "./app/app";
 import server from "./connection/server/server";
@@ -12,13 +10,14 @@ import mongoose from "mongoose";
 //setupt socket
 
 import io from "./connection/sockets/sockets";
+import { ENV } from "./config/env";
 
 console.log(io._connectTimeout);
 
 // set up database connection
 
 function connectToDatabase(app: Express) {
-  const URI = process.env.DATABASE_CONNECTION_URI as string;
+  const URI = ENV.DATABASE_CONNECTION_URI;
   console.log("mongo db uri", URI);
   mongoose.connect(URI).then(() => {
     console.log("MONGODB CONNECTED ::");
@@ -37,7 +36,7 @@ function connectToDatabase(app: Express) {
 }
 
 function startServer() {
-  const PORT = process.env.PORT;
+  const PORT = ENV.PORT;
   server.listen(PORT, () => {
     console.log(`SERVER STARTED AT PORT ${PORT} ::`);
   });

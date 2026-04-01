@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import ApiError from "../error/ApiError";
 import { NextFunction, Request, Response } from "express";
+import { ENV } from "../config/env";
 
 type Allowance = {
   path: string;
@@ -94,23 +95,19 @@ function comparePaths(exactPath: string, pathModel: string) {
 }
 
 const verityToken = (authToken: string, req: Request, next: NextFunction) => {
-  jwt.verify(
-    authToken,
-    process.env.ACCESS_TOKEN_SECRET as string,
-    (err, userinfo) => {
-      if (err) return next(ApiError.forbidden("faulty access token"));
-      userinfo = userinfo as { _id: string; role: string; type: string };
+  jwt.verify(authToken, ENV.ACCESS_TOKEN_SECRET as string, (err, userinfo) => {
+    if (err) return next(ApiError.forbidden("faulty access token"));
+    userinfo = userinfo as { _id: string; role: string; type: string };
 
-      if (userinfo.type !== "access")
-        return next(ApiError.forbidden("not an access token"));
-      if (!isRoleAllowed(req.url, userinfo.role))
-        return next(ApiError.forbidden("role permission denied"));
-      // @ts-ignore
-      req.userInfo = userinfo;
+    if (userinfo.type !== "access")
+      return next(ApiError.forbidden("not an access token"));
+    if (!isRoleAllowed(req.url, userinfo.role))
+      return next(ApiError.forbidden("role permission denied"));
+    // @ts-ignore
+    req.userInfo = userinfo;
 
-      next();
-    },
-  );
+    next();
+  });
 };
 
 export function AuthenticationHandler(

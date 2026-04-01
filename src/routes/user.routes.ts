@@ -17,8 +17,8 @@ import {
   profilePictureFileCatch,
   updateProfile,
   updateProfilePicture,
-} from "../controllers/userController";
-import { validateId } from "../controllers/validationController";
+} from "../controllers/user.controller";
+import { validateId } from "../controllers/validation.controller";
 import ErrorCatcher from "../error/ErrorCatcher";
 
 const UserRouter = express.Router();
@@ -34,7 +34,7 @@ UserRouter.route("/contacts/:id/blacklist").patch(ErrorCatcher(blacklistUser));
 UserRouter.route("/contacts/:id/block").patch(ErrorCatcher(blockContact));
 UserRouter.route("/contacts/:id/unblock").patch(ErrorCatcher(unblockContact));
 UserRouter.route("/conversations/public").get(
-  ErrorCatcher(getPublicConversations)
+  ErrorCatcher(getPublicConversations),
 );
 UserRouter.route("/requests").get(ErrorCatcher(getContactRequests));
 UserRouter.route("/requests/:id")
@@ -42,18 +42,18 @@ UserRouter.route("/requests/:id")
   .post(ErrorCatcher(addContactRequest));
 
 UserRouter.route("/candidates/contacts").get(
-  ErrorCatcher(getContactCandidates)
+  ErrorCatcher(getContactCandidates),
 );
 UserRouter.route("/profile")
   .get(ErrorCatcher(getSelfProfile))
   .patch(ErrorCatcher(updateProfile));
 UserRouter.route("/profile/picture").put(
   ErrorCatcher(profilePictureFileCatch),
-  ErrorCatcher(updateProfilePicture)
+  ErrorCatcher(updateProfilePicture),
 );
 UserRouter.route("/profile/:id").get(ErrorCatcher(getUserProfile));
 UserRouter.route("/profile/:id/contact").get(
-  ErrorCatcher(getContactProfileByConversationId)
+  ErrorCatcher(getContactProfileByConversationId),
 );
 
 export default UserRouter;
